@@ -1,8 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useAppStore } from '@/store/useAppStore';
-import { BucketNav } from '@/components/BucketNav';
-import { KanbanBoard } from '@/components/KanbanBoard';
+import { BucketCard } from '@/components/BucketCard';
 import { DailyPlaybook } from '@/components/DailyPlaybook';
 import { AIChatPanel } from '@/components/AIChatPanel';
 import { StatusLogModal } from '@/components/StatusLogModal';
@@ -10,11 +9,13 @@ import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
 import { Bot, Sparkles } from 'lucide-react';
 
+const leftBuckets = BUCKETS.slice(0, 4);
+const rightBuckets = BUCKETS.slice(4, 8);
+
 const Index = () => {
   const store = useAppStore();
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
-  
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -40,7 +41,7 @@ const Index = () => {
     }
   };
 
-  // Timer tick effect using refs to avoid stale closures
+  // Timer tick effect
   const slotsRef = useRef(store.slots);
   slotsRef.current = store.slots;
 
@@ -75,62 +76,61 @@ const Index = () => {
     }
   };
 
-  const activeBucketData = store.activeBucket
-    ? BUCKETS.find(b => b.id === store.activeBucket)
-    : null;
+  const renderBucketColumn = (buckets: typeof BUCKETS) => (
+    <div className="flex flex-col gap-3 h-full">
+      {buckets.map(bucket => (
+        <div key={bucket.id} className="flex-1 min-h-0">
+          <BucketCard
+            bucketId={bucket.id}
+            tasks={store.tasks.filter(t => t.bucketId === bucket.id)}
+            onAddTask={store.addTask}
+            onDeleteTask={store.deleteTask}
+          />
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex h-screen overflow-hidden bg-background">
-        {/* Sidebar */}
-        <aside className="w-56 border-r border-border/50 flex flex-col shrink-0">
-          <div className="p-4 border-b border-border/50">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              <span className="text-sm font-bold tracking-tight text-foreground">COMMAND OS</span>
-            </div>
+      <div className="flex flex-col h-screen overflow-hidden bg-background">
+        {/* Top bar */}
+        <header className="flex items-center justify-between px-6 py-3 border-b border-border/50 shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-accent" />
+            <span className="text-sm font-bold tracking-tight text-foreground">COMMAND OS</span>
           </div>
-          <div className="flex-1 overflow-y-auto py-2">
-            <BucketNav
-              activeBucket={store.activeBucket}
-              onSelectBucket={store.setActiveBucket}
-              tasks={store.tasks}
+          <button
+            onClick={() => store.setChatOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
+          >
+            <Bot className="w-4 h-4" />
+            Strategy AI
+          </button>
+        </header>
+
+        {/* 3-column layout */}
+        <div className="flex-1 grid grid-cols-[1fr_minmax(320px,1.2fr)_1fr] gap-4 p-4 overflow-hidden min-h-0">
+          {/* Left — 4 buckets */}
+          <div className="overflow-y-auto min-h-0">
+            {renderBucketColumn(leftBuckets)}
+          </div>
+
+          {/* Center — Daily Playbook */}
+          <div className="overflow-y-auto min-h-0">
+            <DailyPlaybook
+              slots={store.slots}
+              onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
+              onPauseTimer={pauseTimer}
+              onCompleteSlot={store.removeTaskFromSlot}
             />
           </div>
-          <div className="p-2 border-t border-border/50">
-            <button
-              onClick={() => store.setChatOpen(true)}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
-            >
-              <Bot className="w-4 h-4" />
-              Strategy AI
-            </button>
-          </div>
-        </aside>
 
-        {/* Kanban Panel (conditional) */}
-        {store.activeBucket && activeBucketData && (
-          <div className="w-72 border-r border-border/50 p-4 overflow-y-auto shrink-0">
-            <KanbanBoard
-              bucketId={store.activeBucket}
-              bucketLabel={activeBucketData.label}
-              tasks={store.getTasksByBucket(store.activeBucket)}
-              onAddTask={store.addTask}
-              onUpdateColumn={store.updateTaskColumn}
-              onDeleteTask={store.deleteTask}
-            />
+          {/* Right — 4 buckets */}
+          <div className="overflow-y-auto min-h-0">
+            {renderBucketColumn(rightBuckets)}
           </div>
-        )}
-
-        {/* Main Content - Daily Playbook */}
-        <main className="flex-1 p-6 overflow-y-auto">
-          <DailyPlaybook
-            slots={store.slots}
-            onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
-            onPauseTimer={pauseTimer}
-            onCompleteSlot={store.removeTaskFromSlot}
-          />
-        </main>
+        </div>
       </div>
 
       {/* AI Chat Panel */}
