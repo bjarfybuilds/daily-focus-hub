@@ -14,7 +14,7 @@ import { Bot, Sparkles, LayoutGrid, Target } from 'lucide-react';
 const leftBuckets = BUCKETS.slice(0, 4);
 const rightBuckets = BUCKETS.slice(4, 8);
 
-const PERSONAL_USER_ID = 'personal-user';
+const PERSONAL_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 type ViewTab = 'plan' | 'execute';
 
