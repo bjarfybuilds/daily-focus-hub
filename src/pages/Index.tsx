@@ -4,27 +4,26 @@ import { useAppStore } from '@/store/useAppStore';
 import { BucketCard } from '@/components/BucketCard';
 import { DailyPlaybook } from '@/components/DailyPlaybook';
 import { AIChatPanel } from '@/components/AIChatPanel';
+import { ExecuteView } from '@/components/ExecuteView';
 import { StatusLogModal } from '@/components/StatusLogModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
-import { Bot, Sparkles, Sun, Moon } from 'lucide-react';
+import { Bot, Sparkles, LayoutGrid, Target } from 'lucide-react';
 
 const leftBuckets = BUCKETS.slice(0, 4);
 const rightBuckets = BUCKETS.slice(4, 8);
 
 const PERSONAL_USER_ID = 'personal-user';
 
+type ViewTab = 'plan' | 'execute';
+
 const Index = () => {
   const store = useAppStore(PERSONAL_USER_ID);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light');
-  }, [theme]);
+  const [activeTab, setActiveTab] = useState<ViewTab>('plan');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -106,61 +105,72 @@ const Index = () => {
       <div className="flex flex-col h-screen overflow-hidden bg-background">
         {/* Top bar */}
         <header className="flex items-center justify-between px-6 py-3 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            <span className="text-sm font-bold tracking-tight text-foreground">CHAT GSD</span>
-          </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-accent" />
+              <span className="text-sm font-bold tracking-tight text-foreground">CHAT GSD</span>
+            </div>
+
+            {/* View Tabs */}
             <div className="flex items-center bg-secondary/50 rounded-xl p-0.5">
               <button
-                onClick={() => setTheme('dark')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${theme === 'dark' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => setActiveTab('plan')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === 'plan' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                <Moon className="w-3.5 h-3.5" />
-                Dark
+                <LayoutGrid className="w-3.5 h-3.5" />
+                Plan
               </button>
               <button
-                onClick={() => setTheme('light')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${theme === 'light' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                onClick={() => setActiveTab('execute')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === 'execute' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
               >
-                <Sun className="w-3.5 h-3.5" />
-                Light
+                <Target className="w-3.5 h-3.5" />
+                Execute
               </button>
             </div>
-            <button
-              onClick={() => store.setChatOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
-            >
-              <Bot className="w-4 h-4" />
-              Chat
-            </button>
           </div>
+
+          <button
+            onClick={() => store.setChatOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
+          >
+            <Bot className="w-4 h-4" />
+            Chat
+          </button>
         </header>
 
-        {/* 3-column layout */}
-        <div className="flex-1 grid grid-cols-[1fr_minmax(320px,1.2fr)_1fr] gap-4 p-4 overflow-hidden min-h-0">
-          {/* Left — 4 buckets */}
-          <div className="overflow-y-auto min-h-0">
-            {renderBucketColumn(leftBuckets)}
+        {/* Content */}
+        {activeTab === 'plan' ? (
+          <div className="flex-1 grid grid-cols-[1fr_minmax(320px,1.2fr)_1fr] gap-4 p-4 overflow-hidden min-h-0">
+            <div className="overflow-y-auto min-h-0">
+              {renderBucketColumn(leftBuckets)}
+            </div>
+            <div className="overflow-y-auto min-h-0">
+              <DailyPlaybook
+                slots={store.slots}
+                onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
+                onPauseTimer={pauseTimer}
+                onCompleteSlot={store.removeTaskFromSlot}
+                onReturnTask={store.returnTaskToBucket}
+                onClickTask={setSelectedTask}
+              />
+            </div>
+            <div className="overflow-y-auto min-h-0">
+              {renderBucketColumn(rightBuckets)}
+            </div>
           </div>
-
-          {/* Center — Daily Playbook */}
-          <div className="overflow-y-auto min-h-0">
-            <DailyPlaybook
-              slots={store.slots}
-              onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
-              onPauseTimer={pauseTimer}
-              onCompleteSlot={store.removeTaskFromSlot}
-              onReturnTask={store.returnTaskToBucket}
-              onClickTask={setSelectedTask}
-            />
-          </div>
-
-          {/* Right — 4 buckets */}
-          <div className="overflow-y-auto min-h-0">
-            {renderBucketColumn(rightBuckets)}
-          </div>
-        </div>
+        ) : (
+          <ExecuteView
+            slots={store.slots}
+            tasks={store.tasks}
+            onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
+            onPauseTimer={pauseTimer}
+            onCompleteSlot={store.removeTaskFromSlot}
+            onClickTask={setSelectedTask}
+            onDeleteTask={store.deleteTask}
+            onUpdateTask={store.updateTask}
+          />
+        )}
       </div>
 
       {/* AI Chat Panel */}
