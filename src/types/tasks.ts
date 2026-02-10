@@ -4,6 +4,12 @@ export type KanbanColumn = 'todo' | 'in-progress' | 'done';
 
 export type Priority = 'low' | 'medium' | 'high';
 
+export interface TaskLogEntry {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -12,6 +18,7 @@ export interface Task {
   column: KanbanColumn;
   bucketId: BucketId;
   createdAt: string;
+  logEntries: TaskLogEntry[];
 }
 
 export interface PlaybookSlot {

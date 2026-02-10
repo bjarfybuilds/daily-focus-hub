@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Task, BucketId, KanbanColumn, PlaybookSlot, Priority } from '@/types/tasks';
+import { Task, BucketId, KanbanColumn, PlaybookSlot, Priority, TaskLogEntry } from '@/types/tasks';
 
 function generateId() {
   return Math.random().toString(36).substring(2, 10);
@@ -27,6 +27,7 @@ export function useAppStore() {
       column: 'todo',
       bucketId,
       createdAt: new Date().toISOString(),
+      logEntries: [],
     };
     setTasks(prev => [...prev, task]);
   }, []);
@@ -61,6 +62,27 @@ export function useAppStore() {
     });
   }, []);
 
+  const returnTaskToBucket = useCallback((slotNumber: number) => {
+    setSlots(prev => {
+      const slot = prev.find(s => s.slotNumber === slotNumber);
+      if (slot?.task) {
+        setTasks(prevTasks => [...prevTasks, { ...slot.task!, column: 'todo' }]);
+      }
+      return prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600 } : s);
+    });
+  }, []);
+
+  const updateTask = useCallback((taskId: string, updates: Partial<Task>) => {
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    setSlots(prev => prev.map(s => s.task?.id === taskId ? { ...s, task: { ...s.task!, ...updates } } : s));
+  }, []);
+
+  const addLogEntry = useCallback((taskId: string, text: string) => {
+    const entry: TaskLogEntry = { id: generateId(), text, createdAt: new Date().toISOString() };
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, logEntries: [...(t.logEntries || []), entry] } : t));
+    setSlots(prev => prev.map(s => s.task?.id === taskId ? { ...s, task: { ...s.task!, logEntries: [...(s.task!.logEntries || []), entry] } } : s));
+  }, []);
+
   const updateSlotTimer = useCallback((slotNumber: number, updates: Partial<PlaybookSlot>) => {
     setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, ...updates } : s));
   }, []);
@@ -73,7 +95,8 @@ export function useAppStore() {
     tasks, slots, activeBucket, chatOpen,
     setActiveBucket, setChatOpen,
     addTask, updateTaskColumn, deleteTask,
-    moveTaskToSlot, removeTaskFromSlot, updateSlotTimer,
+    moveTaskToSlot, removeTaskFromSlot, returnTaskToBucket,
+    updateTask, addLogEntry, updateSlotTimer,
     getTasksByBucket,
   };
 }

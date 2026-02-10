@@ -5,6 +5,7 @@ import { BucketCard } from '@/components/BucketCard';
 import { DailyPlaybook } from '@/components/DailyPlaybook';
 import { AIChatPanel } from '@/components/AIChatPanel';
 import { StatusLogModal } from '@/components/StatusLogModal';
+import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
 import { Bot, Sparkles } from 'lucide-react';
@@ -16,6 +17,7 @@ const Index = () => {
   const store = useAppStore();
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -85,6 +87,7 @@ const Index = () => {
             tasks={store.tasks.filter(t => t.bucketId === bucket.id)}
             onAddTask={store.addTask}
             onDeleteTask={store.deleteTask}
+            onClickTask={setSelectedTask}
           />
         </div>
       ))}
@@ -123,6 +126,8 @@ const Index = () => {
               onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
               onPauseTimer={pauseTimer}
               onCompleteSlot={store.removeTaskFromSlot}
+              onReturnTask={store.returnTaskToBucket}
+              onClickTask={setSelectedTask}
             />
           </div>
 
@@ -141,6 +146,16 @@ const Index = () => {
         <StatusLogModal
           slotNumber={statusLogSlot}
           onSubmit={handleStatusLogSubmit}
+        />
+      )}
+
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdateTask={(id, updates) => { store.updateTask(id, updates); setSelectedTask(prev => prev ? { ...prev, ...updates } : null); }}
+          onAddLogEntry={(id, text) => { store.addLogEntry(id, text); setSelectedTask(prev => prev ? { ...prev, logEntries: [...(prev.logEntries || []), { id: Math.random().toString(36).substring(2,10), text, createdAt: new Date().toISOString() }] } : null); }}
         />
       )}
 

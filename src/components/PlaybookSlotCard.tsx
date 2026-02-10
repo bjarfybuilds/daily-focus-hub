@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { PlaybookSlot, BUCKET_COLORS } from '@/types/tasks';
-import { Play, Pause, RotateCcw, Check } from 'lucide-react';
+import { Play, Pause, RotateCcw, Check, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlaybookSlotCardProps {
@@ -8,6 +8,8 @@ interface PlaybookSlotCardProps {
   onStartTimer: (slotNumber: number) => void;
   onPauseTimer: (slotNumber: number) => void;
   onCompleteSlot: (slotNumber: number) => void;
+  onReturnTask: (slotNumber: number) => void;
+  onClickTask?: (task: import('@/types/tasks').Task) => void;
 }
 
 function formatTime(seconds: number) {
@@ -16,7 +18,7 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteSlot }: PlaybookSlotCardProps) {
+export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteSlot, onReturnTask, onClickTask }: PlaybookSlotCardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${slot.slotNumber}`,
     data: { slotNumber: slot.slotNumber },
@@ -62,8 +64,8 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
 
         {slot.task ? (
           <>
-            <div className="flex-1 mb-2">
-              <p className="text-sm font-medium text-foreground leading-snug">{slot.task.title}</p>
+            <div className="flex-1 mb-2 cursor-pointer" onClick={() => onClickTask?.(slot.task!)}>
+              <p className="text-sm font-medium text-foreground leading-snug hover:text-accent transition-colors">{slot.task.title}</p>
               {slot.task.description && (
                 <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{slot.task.description}</p>
               )}
@@ -93,8 +95,16 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
                 </button>
               )}
               <button
+                onClick={() => onReturnTask(slot.slotNumber)}
+                className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                title="Return to bucket"
+              >
+                <Undo2 className="w-4 h-4" />
+              </button>
+              <button
                 onClick={() => onCompleteSlot(slot.slotNumber)}
                 className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                title="Mark complete"
               >
                 <Check className="w-4 h-4" />
               </button>
