@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
-        name: "Command OS",
-        short_name: "CommandOS",
-        description: "Your daily task command center",
+        name: "CHAT GSD",
+        short_name: "CHATGSD",
+        description: "Get stuff done — your AI-powered command center",
         theme_color: "#0f0f0f",
         background_color: "#0f0f0f",
         display: "standalone",

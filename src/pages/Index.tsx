@@ -8,15 +8,15 @@ import { StatusLogModal } from '@/components/StatusLogModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
-import { Bot, Sparkles, LogOut, Sun, Moon } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { Bot, Sparkles, Sun, Moon } from 'lucide-react';
 
 const leftBuckets = BUCKETS.slice(0, 4);
 const rightBuckets = BUCKETS.slice(4, 8);
 
+const PERSONAL_USER_ID = 'personal-user';
+
 const Index = () => {
-  const { user, signOut } = useAuth();
-  const store = useAppStore(user?.id);
+  const store = useAppStore(PERSONAL_USER_ID);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -108,7 +108,7 @@ const Index = () => {
         <header className="flex items-center justify-between px-6 py-3 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-accent" />
-            <span className="text-sm font-bold tracking-tight text-foreground">COMMAND OS</span>
+            <span className="text-sm font-bold tracking-tight text-foreground">CHAT GSD</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-secondary/50 rounded-xl p-0.5">
@@ -132,13 +132,7 @@ const Index = () => {
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
             >
               <Bot className="w-4 h-4" />
-              Strategy AI
-            </button>
-            <button
-              onClick={signOut}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
+              Chat
             </button>
           </div>
         </header>
