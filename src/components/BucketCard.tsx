@@ -35,7 +35,6 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask }: BucketC
     setTitle('');
     setDesc('');
     setPriority('medium');
-    setShowAdd(false);
   };
 
   return (
