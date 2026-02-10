@@ -1,5 +1,5 @@
 import { useDroppable } from '@dnd-kit/core';
-import { PlaybookSlot } from '@/types/tasks';
+import { PlaybookSlot, BUCKET_COLORS } from '@/types/tasks';
 import { Play, Pause, RotateCcw, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -25,13 +25,14 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
 
   const isActive = slot.timerState === 'running';
   const progress = ((3600 - slot.timeRemaining) / 3600) * 100;
+  const bucketColor = slot.task ? BUCKET_COLORS[slot.task.bucketId] : null;
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
         'relative rounded-xl transition-all duration-300 overflow-hidden',
-        slot.task ? 'glass' : 'border-2 border-dashed border-border/60',
+        slot.task ? 'glass' : 'border-2 border-dashed border-border/40',
         isOver && !slot.task && 'border-accent bg-accent/5 scale-[1.02]',
         isActive && 'ring-2 ring-accent/50',
       )}
@@ -66,31 +67,36 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
               {slot.task.description && (
                 <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{slot.task.description}</p>
               )}
-              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-wider mt-1 inline-block">
+              <span 
+                className="text-[9px] uppercase tracking-wider mt-1 inline-block font-semibold"
+                style={{ color: bucketColor ? `hsl(${bucketColor})` : undefined }}
+              >
                 {slot.task.bucketId}
               </span>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               {slot.timerState === 'idle' || slot.timerState === 'paused' ? (
                 <button
                   onClick={() => onStartTimer(slot.slotNumber)}
-                  className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-semibold text-xs"
                 >
-                  <Play className="w-3.5 h-3.5" />
+                  <Play className="w-4 h-4" />
+                  <span>Start</span>
                 </button>
               ) : (
                 <button
                   onClick={() => onPauseTimer(slot.slotNumber)}
-                  className="p-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-semibold text-xs animate-pulse-accent"
                 >
-                  <Pause className="w-3.5 h-3.5" />
+                  <Pause className="w-4 h-4" />
+                  <span>Pause</span>
                 </button>
               )}
               <button
                 onClick={() => onCompleteSlot(slot.slotNumber)}
                 className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-4 h-4" />
               </button>
             </div>
           </>
