@@ -28,6 +28,17 @@ export interface Bucket {
   tasks: Task[];
 }
 
+export const BUCKET_COLORS: Record<BucketId, string> = {
+  finance: '142 71% 45%',    // green
+  admin: '220 70% 55%',      // blue
+  content: '35 90% 55%',     // orange
+  ads: '340 75% 55%',        // pink/red
+  product: '262 70% 60%',    // purple
+  website: '190 80% 45%',    // teal
+  branding: '45 95% 50%',    // gold/yellow
+  music: '280 60% 55%',      // violet
+};
+
 export const BUCKETS: { id: BucketId; label: string; icon: string }[] = [
   { id: 'finance', label: 'Finance', icon: 'DollarSign' },
   { id: 'admin', label: 'Admin/Ops', icon: 'Settings' },

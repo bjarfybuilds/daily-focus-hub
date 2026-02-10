@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Task, BucketId, BUCKETS, Priority } from '@/types/tasks';
+import { Task, BucketId, BUCKETS, BUCKET_COLORS, Priority } from '@/types/tasks';
 import { TaskCard } from './TaskCard';
 import { Plus, X } from 'lucide-react';
 import {
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
   DollarSign, Settings, FileText, Megaphone, Box, Globe, Palette, Music,
 };
 
@@ -28,6 +28,7 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask }: BucketC
   const bucket = BUCKETS.find(b => b.id === bucketId)!;
   const Icon = iconMap[bucket.icon];
   const todoTasks = tasks.filter(t => t.column === 'todo');
+  const bucketColor = BUCKET_COLORS[bucketId];
 
   const handleAdd = () => {
     if (!title.trim()) return;
@@ -38,11 +39,11 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask }: BucketC
   };
 
   return (
-    <div className="glass rounded-xl p-3 flex flex-col h-full">
+    <div className="glass rounded-xl p-3 flex flex-col h-full" style={{ borderLeft: `3px solid hsl(${bucketColor})` }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-3.5 h-3.5 text-accent" />}
+          {Icon && <Icon className="w-3.5 h-3.5" style={{ color: `hsl(${bucketColor})` }} />}
           <span className="text-xs font-semibold text-foreground tracking-tight">{bucket.label}</span>
           <span className="text-[10px] text-muted-foreground/50">{todoTasks.length}</span>
         </div>
