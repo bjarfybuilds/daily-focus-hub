@@ -14,13 +14,115 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      playbook_slots: {
+        Row: {
+          id: string
+          playbook_date: string
+          slot_number: number
+          task_id: string | null
+          time_remaining: number
+          timer_state: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          playbook_date?: string
+          slot_number: number
+          task_id?: string | null
+          time_remaining?: number
+          timer_state?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          playbook_date?: string
+          slot_number?: number
+          task_id?: string | null
+          time_remaining?: number
+          timer_state?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_slots_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_logs: {
+        Row: {
+          created_at: string
+          entry: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          entry: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          entry?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          description: string | null
+          id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bucket_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_task_owner: { Args: { _task_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
