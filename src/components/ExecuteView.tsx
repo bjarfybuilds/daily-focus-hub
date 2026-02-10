@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot, Priority } from '@/types/tasks';
 import { CheckCircle2, Circle, Trash2, ChevronDown, Target, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,8 +35,6 @@ export function ExecuteView({
   onDeleteTask,
   onUpdateTask,
 }: ExecuteViewProps) {
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-
   // Get today's active tasks from slots
   const activeTasks = slots
     .filter(s => s.task)
@@ -54,13 +51,16 @@ export function ExecuteView({
     ...todoTasks.slice(0, 5), // Show top 5 todos
   ];
 
-  const toggleComplete = (taskId: string) => {
-    setCompletedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
-      return next;
-    });
+  const toggleComplete = (task: Task) => {
+    // Find if this task is in a playbook slot
+    const slotWithTask = slots.find(s => s.task?.id === task.id);
+    if (slotWithTask) {
+      // Complete the slot (removes from slot, marks as done in DB)
+      onCompleteSlot(slotWithTask.slotNumber);
+    } else {
+      // Update task status to done in DB
+      onUpdateTask(task.id, { column: 'done' });
+    }
   };
 
   const greeting = () => {
@@ -139,7 +139,7 @@ export function ExecuteView({
         ) : (
           <div className="space-y-1">
             {allTodayTasks.map((task) => {
-              const isCompleted = completedIds.has(task.id);
+              const isCompleted = task.column === 'done';
               const bucket = BUCKETS.find(b => b.id === task.bucketId);
               const priority = priorityConfig[task.priority];
 
@@ -153,7 +153,7 @@ export function ExecuteView({
                   )}
                 >
                   <button
-                    onClick={() => toggleComplete(task.id)}
+                    onClick={() => toggleComplete(task)}
                     className="shrink-0"
                   >
                     {isCompleted ? (
