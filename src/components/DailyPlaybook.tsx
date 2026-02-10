@@ -24,7 +24,7 @@ export function DailyPlaybook({ slots, onStartTimer, onPauseTimer, onCompleteSlo
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 flex-1">
+      <div className="flex flex-col gap-3 flex-1">
         {slots.map(slot => (
           <PlaybookSlotCard
             key={slot.slotNumber}
