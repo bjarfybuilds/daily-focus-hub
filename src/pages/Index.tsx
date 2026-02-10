@@ -8,7 +8,7 @@ import { StatusLogModal } from '@/components/StatusLogModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
-import { Bot, Sparkles, LogOut } from 'lucide-react';
+import { Bot, Sparkles, LogOut, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const leftBuckets = BUCKETS.slice(0, 4);
@@ -20,6 +20,11 @@ const Index = () => {
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light');
+  }, [theme]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -106,6 +111,22 @@ const Index = () => {
             <span className="text-sm font-bold tracking-tight text-foreground">COMMAND OS</span>
           </div>
           <div className="flex items-center gap-2">
+            <div className="flex items-center bg-secondary/50 rounded-xl p-0.5">
+              <button
+                onClick={() => setTheme('dark')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${theme === 'dark' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Moon className="w-3.5 h-3.5" />
+                Dark
+              </button>
+              <button
+                onClick={() => setTheme('light')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${theme === 'light' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Sun className="w-3.5 h-3.5" />
+                Light
+              </button>
+            </div>
             <button
               onClick={() => store.setChatOpen(true)}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
