@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 interface TaskCardProps {
   task: Task;
   onDelete?: (id: string) => void;
+  onClick?: (task: Task) => void;
   isDragOverlay?: boolean;
 }
 
@@ -15,12 +16,17 @@ const priorityStyles: Record<string, string> = {
   low: 'bg-muted text-muted-foreground',
 };
 
-export function TaskCard({ task, onDelete, isDragOverlay }: TaskCardProps) {
+export function TaskCard({ task, onDelete, onClick, isDragOverlay }: TaskCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     data: { task },
     disabled: isDragOverlay,
   });
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
+    onClick?.(task);
+  };
 
   return (
     <div
@@ -29,8 +35,10 @@ export function TaskCard({ task, onDelete, isDragOverlay }: TaskCardProps) {
         'glass rounded-lg p-3 group cursor-grab active:cursor-grabbing transition-all duration-200',
         isDragging && 'opacity-30 scale-95',
         isDragOverlay && 'shadow-xl scale-105 rotate-2',
+        onClick && 'hover:ring-1 hover:ring-accent/30',
       )}
       {...(!isDragOverlay ? { ...attributes, ...listeners } : {})}
+      onClick={handleClick}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-start gap-2 flex-1 min-w-0">

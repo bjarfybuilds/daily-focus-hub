@@ -1,4 +1,4 @@
-import { PlaybookSlot } from '@/types/tasks';
+import { PlaybookSlot, Task } from '@/types/tasks';
 import { PlaybookSlotCard } from './PlaybookSlotCard';
 import { Zap } from 'lucide-react';
 
@@ -7,9 +7,11 @@ interface DailyPlaybookProps {
   onStartTimer: (slotNumber: number) => void;
   onPauseTimer: (slotNumber: number) => void;
   onCompleteSlot: (slotNumber: number) => void;
+  onReturnTask: (slotNumber: number) => void;
+  onClickTask?: (task: Task) => void;
 }
 
-export function DailyPlaybook({ slots, onStartTimer, onPauseTimer, onCompleteSlot }: DailyPlaybookProps) {
+export function DailyPlaybook({ slots, onStartTimer, onPauseTimer, onCompleteSlot, onReturnTask, onClickTask }: DailyPlaybookProps) {
   const filledCount = slots.filter(s => s.task).length;
 
   return (
@@ -32,6 +34,8 @@ export function DailyPlaybook({ slots, onStartTimer, onPauseTimer, onCompleteSlo
             onStartTimer={onStartTimer}
             onPauseTimer={onPauseTimer}
             onCompleteSlot={onCompleteSlot}
+            onReturnTask={onReturnTask}
+            onClickTask={onClickTask}
           />
         ))}
       </div>

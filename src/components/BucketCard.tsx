@@ -17,9 +17,10 @@ interface BucketCardProps {
   tasks: Task[];
   onAddTask: (bucketId: BucketId, title: string, description: string, priority: Priority) => void;
   onDeleteTask: (taskId: string) => void;
+  onClickTask?: (task: Task) => void;
 }
 
-export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask }: BucketCardProps) {
+export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTask }: BucketCardProps) {
   const [showAdd, setShowAdd] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -95,7 +96,7 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask }: BucketC
       {/* Task list */}
       <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
         {todoTasks.map(task => (
-          <TaskCard key={task.id} task={task} onDelete={onDeleteTask} />
+          <TaskCard key={task.id} task={task} onDelete={onDeleteTask} onClick={onClickTask} />
         ))}
         {todoTasks.length === 0 && !showAdd && (
           <p className="text-[10px] text-muted-foreground/30 text-center py-4">No tasks</p>
