@@ -190,7 +190,18 @@ const Index = () => {
       </div>
 
       {/* AI Chat Panel */}
-      <AIChatPanel open={store.chatOpen} onClose={() => store.setChatOpen(false)} />
+      <AIChatPanel
+        open={store.chatOpen}
+        onClose={() => store.setChatOpen(false)}
+        store={{
+          tasks: store.tasks,
+          slots: store.slots,
+          addTask: store.addTask,
+          deleteTask: store.deleteTask,
+          updateTask: store.updateTask,
+          moveTaskToSlot: store.moveTaskToSlot,
+        }}
+      />
 
       {/* Status Log Modal */}
       {statusLogSlot !== null && (
