@@ -83,6 +83,8 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry, on
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingLogText, setEditingLogText] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
+  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
+  const [editingSubtaskText, setEditingSubtaskText] = useState('');
   const [newLink, setNewLink] = useState('');
   const [showAddLink, setShowAddLink] = useState(false);
   const bucketColor = BUCKET_COLORS[task.bucketId];
@@ -239,20 +241,64 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry, on
               {subtasks.map((st, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer border-b border-border/40 last:border-b-0"
-                  onClick={() => handleToggleSubtask(st.lineIndex)}
+                  className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-secondary/30 transition-colors border-b border-border/40 last:border-b-0"
                 >
-                  {st.checked ? (
-                    <CheckSquare className="w-4 h-4 text-accent shrink-0" />
+                  <button
+                    onClick={() => handleToggleSubtask(st.lineIndex)}
+                    className="shrink-0"
+                  >
+                    {st.checked ? (
+                      <CheckSquare className="w-4 h-4 text-accent" />
+                    ) : (
+                      <Square className="w-4 h-4 text-muted-foreground/40" />
+                    )}
+                  </button>
+                  {editingSubtaskIndex === st.lineIndex ? (
+                    <input
+                      type="text"
+                      value={editingSubtaskText}
+                      onChange={e => setEditingSubtaskText(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          // Save the edited subtask text
+                          const lines = description.split('\n');
+                          const prefix = st.checked ? '[x] ' : '[ ] ';
+                          lines[st.lineIndex] = prefix + editingSubtaskText.trim();
+                          const newDesc = lines.join('\n');
+                          setDescription(newDesc);
+                          onUpdateTask(task.id, { description: newDesc });
+                          setEditingSubtaskIndex(null);
+                        } else if (e.key === 'Escape') {
+                          setEditingSubtaskIndex(null);
+                        }
+                      }}
+                      onBlur={() => {
+                        const lines = description.split('\n');
+                        const prefix = st.checked ? '[x] ' : '[ ] ';
+                        lines[st.lineIndex] = prefix + editingSubtaskText.trim();
+                        const newDesc = lines.join('\n');
+                        setDescription(newDesc);
+                        onUpdateTask(task.id, { description: newDesc });
+                        setEditingSubtaskIndex(null);
+                      }}
+                      className="flex-1 bg-transparent text-sm text-foreground outline-none border-b border-accent/50 py-0.5"
+                      autoFocus
+                    />
                   ) : (
-                    <Square className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                    <span
+                      className={cn(
+                        'text-sm text-foreground cursor-pointer hover:text-accent transition-colors',
+                        st.checked && 'line-through text-muted-foreground'
+                      )}
+                      onClick={() => {
+                        setEditingSubtaskIndex(st.lineIndex);
+                        setEditingSubtaskText(st.text);
+                      }}
+                    >
+                      {st.text}
+                    </span>
                   )}
-                  <span className={cn(
-                    'text-sm text-foreground',
-                    st.checked && 'line-through text-muted-foreground'
-                  )}>
-                    {st.text}
-                  </span>
                 </div>
               ))}
             </div>
