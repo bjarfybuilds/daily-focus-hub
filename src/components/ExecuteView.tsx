@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot, Priority } from '@/types/tasks';
-import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer } from 'lucide-react';
+import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer, Pencil } from 'lucide-react';
 import { DailyPlaybook } from './DailyPlaybook';
 import { cn } from '@/lib/utils';
 
@@ -50,6 +50,17 @@ function toggleSubtaskInDescription(description: string, lineIndex: number): str
     lines[lineIndex] = line.replace(/\[x\]/i, '[ ]');
   } else if (line.match(/^\s*\[\s*\]/)) {
     lines[lineIndex] = line.replace(/\[\s*\]/, '[x]');
+  }
+  return lines.join('\n');
+}
+
+function renameSubtaskInDescription(description: string, lineIndex: number, newText: string): string {
+  const lines = description.split('\n');
+  const line = lines[lineIndex];
+  if (line.match(/^\s*\[x\]/i)) {
+    lines[lineIndex] = `[x] ${newText}`;
+  } else if (line.match(/^\s*\[\s*\]/)) {
+    lines[lineIndex] = `[ ] ${newText}`;
   }
   return lines.join('\n');
 }
@@ -106,10 +117,25 @@ export function ExecuteView({
   const focusBucket = focusSlot?.task ? BUCKETS.find(b => b.id === focusSlot.task!.bucketId) : null;
   const focusSubtasks = focusSlot?.task ? parseSubtasks(focusSlot.task.description) : [];
 
+  const [editingSubtaskIndex, setEditingSubtaskIndex] = useState<number | null>(null);
+  const [subtaskEditValue, setSubtaskEditValue] = useState('');
+
   const handleToggleSubtask = (lineIndex: number) => {
     if (!focusSlot?.task) return;
     const newDesc = toggleSubtaskInDescription(focusSlot.task.description, lineIndex);
     onUpdateTask(focusSlot.task.id, { description: newDesc });
+  };
+
+  const handleStartEditSubtask = (lineIndex: number, currentText: string) => {
+    setEditingSubtaskIndex(lineIndex);
+    setSubtaskEditValue(currentText);
+  };
+
+  const handleSaveSubtask = () => {
+    if (!focusSlot?.task || editingSubtaskIndex === null) return;
+    const newDesc = renameSubtaskInDescription(focusSlot.task.description, editingSubtaskIndex, subtaskEditValue);
+    onUpdateTask(focusSlot.task.id, { description: newDesc });
+    setEditingSubtaskIndex(null);
   };
 
   const handleStartEditNotes = () => {
@@ -232,20 +258,41 @@ export function ExecuteView({
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Subtasks</label>
                   <div className="space-y-1">
                     {focusSubtasks.map((st, i) => (
-                      <button
+                      <div
                         key={i}
-                        className="flex items-center gap-2.5 py-1.5 w-full text-left hover:bg-secondary/30 rounded-lg px-1.5 -mx-1.5 transition-colors"
-                        onClick={() => handleToggleSubtask(st.lineIndex)}
+                        className="flex items-center gap-2.5 py-1.5 w-full hover:bg-secondary/30 rounded-lg px-1.5 -mx-1.5 transition-colors"
                       >
-                        {st.checked ? (
-                          <CheckSquare className="w-4 h-4 text-accent shrink-0" />
+                        <button
+                          onClick={() => handleToggleSubtask(st.lineIndex)}
+                          className="shrink-0"
+                        >
+                          {st.checked ? (
+                            <CheckSquare className="w-4 h-4 text-accent" />
+                          ) : (
+                            <Square className="w-4 h-4 text-muted-foreground/40" />
+                          )}
+                        </button>
+                        {editingSubtaskIndex === st.lineIndex ? (
+                          <input
+                            autoFocus
+                            value={subtaskEditValue}
+                            onChange={(e) => setSubtaskEditValue(e.target.value)}
+                            onBlur={handleSaveSubtask}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveSubtask();
+                              if (e.key === 'Escape') setEditingSubtaskIndex(null);
+                            }}
+                            className="flex-1 bg-transparent text-sm text-foreground outline-none border-b border-accent/40"
+                          />
                         ) : (
-                          <Square className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                          <span
+                            className={cn('text-sm flex-1 cursor-text', st.checked && 'line-through text-muted-foreground')}
+                            onClick={() => handleStartEditSubtask(st.lineIndex, st.text)}
+                          >
+                            {st.text}
+                          </span>
                         )}
-                        <span className={cn('text-sm', st.checked && 'line-through text-muted-foreground')}>
-                          {st.text}
-                        </span>
-                      </button>
+                      </div>
                     ))}
                   </div>
                 </div>
