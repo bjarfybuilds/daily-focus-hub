@@ -174,7 +174,7 @@ export function ExecuteView({
   const isRunning = focusSlot?.timerState === 'running';
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 max-w-4xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto px-2 py-4 sm:px-8 sm:py-8 max-w-4xl mx-auto w-full">
       {/* Greeting */}
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl font-bold text-foreground">{greeting()} 👋</h1>
@@ -184,23 +184,36 @@ export function ExecuteView({
       {/* Focus Mode */}
       {focusSlot?.task && (
         <div className="surface-raised p-5 sm:p-8 mb-6 sm:mb-8 relative overflow-hidden">
-          {/* Ambient breathing orbs — only visible when running */}
-          {isRunning && (
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              <div
-                className="absolute -top-20 -left-20 w-64 h-64 sm:w-96 sm:h-96 rounded-full blur-3xl animate-breathe-1"
-                style={{ background: `radial-gradient(circle, hsl(${focusBucketColor || 'var(--accent)'} / 0.2), transparent 70%)` }}
-              />
-              <div
-                className="absolute -bottom-16 -right-16 w-56 h-56 sm:w-80 sm:h-80 rounded-full blur-3xl animate-breathe-2"
-                style={{ background: `radial-gradient(circle, hsl(var(--accent) / 0.15), transparent 70%)` }}
-              />
-              <div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-72 sm:h-72 rounded-full blur-3xl animate-breathe-3"
-                style={{ background: `radial-gradient(circle, hsl(var(--ring) / 0.1), transparent 70%)` }}
-              />
-            </div>
-          )}
+          {/* Ambient breathing orbs — always visible in focus mode, intensify when running */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div
+              className="absolute -top-10 -left-10 w-72 h-72 sm:w-[28rem] sm:h-[28rem] rounded-full blur-[80px] animate-breathe-1 transition-opacity duration-1000"
+              style={{
+                background: `radial-gradient(circle, hsl(${focusBucketColor || '220 80% 56%'} / ${isRunning ? '0.35' : '0.18'}), transparent 65%)`,
+              }}
+            />
+            <div
+              className="absolute -bottom-10 -right-10 w-64 h-64 sm:w-[24rem] sm:h-[24rem] rounded-full blur-[80px] animate-breathe-2 transition-opacity duration-1000"
+              style={{
+                background: `radial-gradient(circle, hsl(220 80% 56% / ${isRunning ? '0.3' : '0.12'}), transparent 65%)`,
+              }}
+            />
+            <div
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 sm:w-[22rem] sm:h-[22rem] rounded-full blur-[80px] animate-breathe-3 transition-opacity duration-1000"
+              style={{
+                background: `radial-gradient(circle, hsl(${focusBucketColor || '220 80% 56%'} / ${isRunning ? '0.2' : '0.08'}), hsl(220 80% 56% / ${isRunning ? '0.1' : '0.04'}), transparent 70%)`,
+              }}
+            />
+            {/* Extra orb for more visual richness */}
+            <div
+              className="absolute bottom-1/4 left-1/4 w-48 h-48 sm:w-80 sm:h-80 rounded-full blur-[100px] animate-breathe-1 transition-opacity duration-1000"
+              style={{
+                background: `radial-gradient(circle, hsl(262 70% 60% / ${isRunning ? '0.2' : '0.08'}), transparent 70%)`,
+                animationDelay: '3s',
+                animationDuration: '14s',
+              }}
+            />
+          </div>
 
           {/* Top accent bar */}
           <div
@@ -387,7 +400,7 @@ export function ExecuteView({
       )}
 
       {/* Daily Playbook */}
-      <div className="surface-card p-4 sm:p-6">
+      <div className="surface-card p-3 sm:p-6 w-full">
         <DailyPlaybook
           slots={slots}
           onStartTimer={onStartTimer}
