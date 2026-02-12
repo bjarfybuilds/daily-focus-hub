@@ -30,7 +30,10 @@ function SlotTaskDraggable({ slot, children }: { slot: PlaybookSlot; children: R
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      className={cn('cursor-grab active:cursor-grabbing', isDragging && 'opacity-30')}
+      className={cn(
+        'cursor-grab active:cursor-grabbing flex-1 flex flex-col',
+        isDragging && 'opacity-30'
+      )}
     >
       {children}
     </div>
