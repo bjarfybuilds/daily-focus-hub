@@ -39,13 +39,34 @@ const Index = () => {
     const { active, over } = event;
     if (!over) return;
 
+    const activeId = String(active.id);
     const overId = String(over.id);
+    const fromSlot = active.data.current?.fromSlot as number | undefined;
+
     if (overId.startsWith('slot-')) {
       const slotNumber = parseInt(overId.replace('slot-', ''));
-      const slot = store.slots.find(s => s.slotNumber === slotNumber);
-      if (slot && !slot.task) {
-        store.moveTaskToSlot(String(active.id), slotNumber);
+      const targetSlot = store.slots.find(s => s.slotNumber === slotNumber);
+
+      if (fromSlot !== undefined) {
+        // Moving from one slot to another
+        if (fromSlot !== slotNumber && targetSlot && !targetSlot.task) {
+          const sourceSlot = store.slots.find(s => s.slotNumber === fromSlot);
+          if (sourceSlot?.task) {
+            // Return task to bucket first, then move to new slot
+            store.returnTaskToBucket(fromSlot);
+            // Small delay to allow state to update
+            setTimeout(() => {
+              store.moveTaskToSlot(sourceSlot.task!.id, slotNumber);
+            }, 50);
+          }
+        }
+      } else if (targetSlot && !targetSlot.task) {
+        // Moving from bucket to slot
+        store.moveTaskToSlot(activeId, slotNumber);
       }
+    } else if (fromSlot !== undefined) {
+      // Dragged from a slot but dropped outside slots — return to bucket
+      store.returnTaskToBucket(fromSlot);
     }
   };
 
@@ -218,6 +239,7 @@ const Index = () => {
           onClose={() => setSelectedTask(null)}
           onUpdateTask={(id, updates) => { store.updateTask(id, updates); setSelectedTask(prev => prev ? { ...prev, ...updates } : null); }}
           onAddLogEntry={(id, text) => { store.addLogEntry(id, text); setSelectedTask(prev => prev ? { ...prev, logEntries: [...(prev.logEntries || []), { id: Math.random().toString(36).substring(2,10), text, createdAt: new Date().toISOString() }] } : null); }}
+          onDeleteTask={(id) => { store.deleteTask(id); setSelectedTask(null); }}
         />
       )}
 

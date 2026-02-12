@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import { PlaybookSlot, BUCKET_COLORS } from '@/types/tasks';
-import { Play, Pause, Check, Undo2 } from 'lucide-react';
+import { Play, Pause, Check, Undo2, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlaybookSlotCardProps {
@@ -18,16 +19,86 @@ function formatTime(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
+function SlotTaskDraggable({ slot, children }: { slot: PlaybookSlot; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `slottask-${slot.slotNumber}`,
+    data: { task: slot.task, fromSlot: slot.slotNumber },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      className={cn('cursor-grab active:cursor-grabbing', isDragging && 'opacity-30')}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteSlot, onReturnTask, onClickTask }: PlaybookSlotCardProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${slot.slotNumber}`,
     data: { slotNumber: slot.slotNumber },
-    disabled: !!slot.task,
   });
 
   const isActive = slot.timerState === 'running';
   const progress = ((3600 - slot.timeRemaining) / 3600) * 100;
   const bucketColor = slot.task ? BUCKET_COLORS[slot.task.bucketId] : null;
+
+  const taskContent = slot.task ? (
+    <>
+      <div className="flex-1 mb-2 cursor-pointer" onClick={() => onClickTask?.(slot.task!)}>
+        <p className="text-sm font-semibold text-foreground leading-snug hover:text-accent transition-colors">{slot.task.title}</p>
+        {slot.task.description && (
+          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{slot.task.description}</p>
+        )}
+        <div className="flex items-center gap-1.5 mt-1">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: bucketColor ? `hsl(${bucketColor})` : undefined }}
+          />
+          <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
+            {slot.task.bucketId}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {slot.timerState === 'idle' || slot.timerState === 'paused' ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); onStartTimer(slot.slotNumber); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs"
+          >
+            <Play className="w-3.5 h-3.5" />
+            <span>{slot.timerState === 'paused' ? 'Resume' : 'Start'}</span>
+          </button>
+        ) : (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPauseTimer(slot.slotNumber); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs animate-pulse-accent"
+          >
+            <Pause className="w-3.5 h-3.5" />
+            <span>Pause</span>
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); onReturnTask(slot.slotNumber); }}
+          className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+          title="Return to bucket"
+        >
+          <Undo2 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onCompleteSlot(slot.slotNumber); }}
+          className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+          title="Mark complete"
+        >
+          <Check className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </>
+  ) : null;
 
   return (
     <div
@@ -35,7 +106,7 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
       className={cn(
         'relative rounded-2xl transition-all duration-300 overflow-hidden',
         slot.task ? 'surface-card' : 'border-2 border-dashed border-border/60 bg-secondary/30',
-        isOver && !slot.task && 'border-accent bg-accent/5 scale-[1.01]',
+        isOver && 'border-accent bg-accent/5 scale-[1.01]',
         isActive && 'ring-2 ring-accent/30',
       )}
     >
@@ -63,56 +134,9 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
         </div>
 
         {slot.task ? (
-          <>
-            <div className="flex-1 mb-2 cursor-pointer" onClick={() => onClickTask?.(slot.task!)}>
-              <p className="text-sm font-semibold text-foreground leading-snug hover:text-accent transition-colors">{slot.task.title}</p>
-              {slot.task.description && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{slot.task.description}</p>
-              )}
-              <div className="flex items-center gap-1.5 mt-1">
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: bucketColor ? `hsl(${bucketColor})` : undefined }}
-                />
-                <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
-                  {slot.task.bucketId}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {slot.timerState === 'idle' || slot.timerState === 'paused' ? (
-                <button
-                  onClick={() => onStartTimer(slot.slotNumber)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>{slot.timerState === 'paused' ? 'Resume' : 'Start'}</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => onPauseTimer(slot.slotNumber)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs animate-pulse-accent"
-                >
-                  <Pause className="w-3.5 h-3.5" />
-                  <span>Pause</span>
-                </button>
-              )}
-              <button
-                onClick={() => onReturnTask(slot.slotNumber)}
-                className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-                title="Return to bucket"
-              >
-                <Undo2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => onCompleteSlot(slot.slotNumber)}
-                className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-                title="Mark complete"
-              >
-                <Check className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </>
+          <SlotTaskDraggable slot={slot}>
+            {taskContent}
+          </SlotTaskDraggable>
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <p className="text-[11px] text-muted-foreground/30 font-medium">Drop task here</p>
