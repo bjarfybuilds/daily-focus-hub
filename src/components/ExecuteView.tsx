@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
-import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot, Priority } from '@/types/tasks';
-import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer, Pencil, SkipBack, SkipForward } from 'lucide-react';
+import { useState } from 'react';
+import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot } from '@/types/tasks';
+import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer, SkipBack, SkipForward } from 'lucide-react';
 import { DailyPlaybook } from './DailyPlaybook';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -68,7 +68,6 @@ function renameSubtaskInDescription(description: string, lineIndex: number, newT
 
 function updateNotesInDescription(description: string, newNotes: string): string {
   const lines = description.split('\n');
-  // Preserve subtask lines and URL lines, replace everything else
   const preserved: { index: number; line: string }[] = [];
   lines.forEach((line, i) => {
     const t = line.trim();
@@ -76,7 +75,6 @@ function updateNotesInDescription(description: string, newNotes: string): string
       preserved.push({ index: i, line });
     }
   });
-  
   const noteLines = newNotes.split('\n').filter(l => l.trim().length > 0);
   return [...noteLines, ...preserved.map(p => p.line)].join('\n');
 }
@@ -88,7 +86,7 @@ const DURATION_PRESETS = [
   { label: '60m', seconds: 60 * 60 },
 ];
 
-const SKIP_SECONDS = 5 * 60; // 5 minutes
+const SKIP_SECONDS = 5 * 60;
 
 export function ExecuteView({
   slots,
@@ -154,15 +152,9 @@ export function ExecuteView({
     setEditingNotes(false);
   };
 
-  // Determine which duration preset is closest to current timeRemaining
   const currentDuration = focusSlot?.timeRemaining ?? 3600;
-  // Find the selected preset total to compute progress
-  const selectedPresetSeconds = DURATION_PRESETS.reduce((closest, p) =>
-    Math.abs(p.seconds - (focusSlot?.timeRemaining ?? 3600)) < Math.abs(closest - (focusSlot?.timeRemaining ?? 3600)) ? p.seconds : closest
-  , 3600);
-  // Use a ref to track the "sprint total" — set when timer starts or preset is chosen
-  const sprintTotal = focusSlot ? 
-    DURATION_PRESETS.find(p => p.seconds >= currentDuration)?.seconds ?? 3600 
+  const sprintTotal = focusSlot
+    ? DURATION_PRESETS.find(p => p.seconds >= currentDuration)?.seconds ?? 3600
     : 3600;
   const elapsed = sprintTotal - currentDuration;
   const progressPercent = sprintTotal > 0 ? Math.min(100, (elapsed / sprintTotal) * 100) : 0;
@@ -179,29 +171,50 @@ export function ExecuteView({
     onSetSlotDuration(focusSlot.slotNumber, newTime);
   };
 
+  const isRunning = focusSlot?.timerState === 'running';
+
   return (
-    <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 max-w-4xl mx-auto w-full">
       {/* Greeting */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">{greeting()} 👋</h1>
-        <p className="text-muted-foreground text-sm mt-1">What do you plan to execute today?</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">{greeting()} 👋</h1>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1">What do you plan to execute today?</p>
       </div>
 
-      {/* Focus Mode - Centered hero */}
+      {/* Focus Mode */}
       {focusSlot?.task && (
-        <div className="surface-raised p-8 mb-8 relative overflow-hidden">
+        <div className="surface-raised p-5 sm:p-8 mb-6 sm:mb-8 relative overflow-hidden">
+          {/* Ambient breathing orbs — only visible when running */}
+          {isRunning && (
+            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+              <div
+                className="absolute -top-20 -left-20 w-64 h-64 sm:w-96 sm:h-96 rounded-full blur-3xl animate-breathe-1"
+                style={{ background: `radial-gradient(circle, hsl(${focusBucketColor || 'var(--accent)'} / 0.2), transparent 70%)` }}
+              />
+              <div
+                className="absolute -bottom-16 -right-16 w-56 h-56 sm:w-80 sm:h-80 rounded-full blur-3xl animate-breathe-2"
+                style={{ background: `radial-gradient(circle, hsl(var(--accent) / 0.15), transparent 70%)` }}
+              />
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-72 sm:h-72 rounded-full blur-3xl animate-breathe-3"
+                style={{ background: `radial-gradient(circle, hsl(var(--ring) / 0.1), transparent 70%)` }}
+              />
+            </div>
+          )}
+
+          {/* Top accent bar */}
           <div
             className="absolute top-0 left-0 w-full h-1"
             style={{ backgroundColor: focusBucketColor ? `hsl(${focusBucketColor})` : undefined }}
           />
 
-          {/* Header: bucket + task title */}
-          <div className="text-center mb-6">
+          {/* Header */}
+          <div className="text-center mb-4 sm:mb-6 relative z-10">
             <div className="flex items-center justify-center gap-3 mb-2">
-              <span className="text-xs font-bold text-accent uppercase tracking-widest">Focus Mode</span>
+              <span className="text-[10px] sm:text-xs font-bold text-accent uppercase tracking-widest">Focus Mode</span>
               {focusBucket && (
                 <span
-                  className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                  className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
                   style={{
                     backgroundColor: focusBucketColor ? `hsl(${focusBucketColor} / 0.12)` : undefined,
                     color: focusBucketColor ? `hsl(${focusBucketColor})` : undefined,
@@ -211,74 +224,75 @@ export function ExecuteView({
                 </span>
               )}
             </div>
-            <h2 className="text-2xl font-extrabold text-foreground uppercase tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-extrabold text-foreground uppercase tracking-tight">
               {focusSlot.task.title}
             </h2>
           </div>
 
-          {/* Centered Timer Block */}
-          <div className="flex flex-col items-center gap-4 mb-6">
-            {/* Big Timer */}
+          {/* Timer Block */}
+          <div className="flex flex-col items-center gap-3 sm:gap-4 mb-4 sm:mb-6 relative z-10">
+            {/* Timer — responsive sizing */}
             <span className={cn(
-              'text-7xl font-mono font-bold tracking-tight tabular-nums',
-              focusSlot.timerState === 'running' ? 'text-accent' : 'text-foreground'
+              'text-4xl sm:text-6xl md:text-7xl font-mono font-bold tracking-tight tabular-nums transition-colors duration-500',
+              isRunning ? 'text-accent' : 'text-foreground',
+              isRunning && 'animate-float-slow'
             )}>
               {formatTime(focusSlot.timeRemaining)}
             </span>
 
-            {/* Progress bar + elapsed/remaining */}
-            <div className="w-full max-w-md space-y-1.5">
-              <Progress value={progressPercent} className="h-2" />
-              <div className="flex justify-between text-[10px] font-mono text-muted-foreground">
+            {/* Progress bar */}
+            <div className="w-full max-w-xs sm:max-w-md space-y-1">
+              <Progress value={progressPercent} className="h-1.5 sm:h-2" />
+              <div className="flex justify-between text-[9px] sm:text-[10px] font-mono text-muted-foreground">
                 <span>{formatTime(elapsed)}</span>
                 <span>-{formatTime(currentDuration)}</span>
               </div>
             </div>
 
-            {/* Skip + Play/Pause Controls */}
-            <div className="flex items-center gap-4">
+            {/* Controls */}
+            <div className="flex items-center gap-3 sm:gap-4">
               <button
                 onClick={handleSkipBack}
-                className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                className="p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
                 title="Skip back 5 min"
               >
-                <SkipBack className="w-5 h-5" />
+                <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {focusSlot.timerState === 'running' ? (
+              {isRunning ? (
                 <button
                   onClick={() => onPauseTimer(focusSlot.slotNumber)}
-                  className="flex items-center justify-center w-16 h-16 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-all shadow-sm"
+                  className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-secondary text-foreground hover:bg-secondary/80 transition-all shadow-sm"
                 >
-                  <Pause className="w-7 h-7" />
+                  <Pause className="w-5 h-5 sm:w-7 sm:h-7" />
                 </button>
               ) : (
                 <button
                   onClick={() => onStartTimer(focusSlot.slotNumber)}
-                  className="flex items-center justify-center w-16 h-16 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all shadow-md"
+                  className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-accent text-accent-foreground hover:bg-accent/90 transition-all shadow-md"
                 >
-                  <Play className="w-7 h-7 ml-0.5" />
+                  <Play className="w-5 h-5 sm:w-7 sm:h-7 ml-0.5" />
                 </button>
               )}
 
               <button
                 onClick={handleSkipForward}
-                className="p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
+                className="p-2 sm:p-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary transition-all"
                 title="Skip forward 5 min"
               >
-                <SkipForward className="w-5 h-5" />
+                <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
             {/* Duration Presets */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <Timer className="w-3 h-3 text-muted-foreground/50" />
               {DURATION_PRESETS.map(preset => (
                 <button
                   key={preset.seconds}
                   onClick={() => onSetSlotDuration(focusSlot.slotNumber, preset.seconds)}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all',
+                    'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all',
                     currentDuration === preset.seconds
                       ? 'bg-accent/15 text-accent'
                       : 'text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary'
@@ -289,38 +303,36 @@ export function ExecuteView({
               ))}
             </div>
 
-            {/* Complete Button */}
+            {/* Complete */}
             <button
               onClick={() => onCompleteSlot(focusSlot.slotNumber)}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold bg-accent/10 text-accent hover:bg-accent/15 transition-all border border-accent/20 mt-1"
+              className="flex items-center gap-2 px-5 sm:px-6 py-2 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-semibold bg-accent/10 text-accent hover:bg-accent/15 transition-all border border-accent/20 mt-1"
             >
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>COMPLETE SPRINT</span>
             </button>
           </div>
 
-          {/* Notes + Subtasks below timer */}
-          <div className="max-w-lg mx-auto space-y-4">
-            {/* Editable Notes */}
+          {/* Notes + Subtasks */}
+          <div className="max-w-lg mx-auto space-y-3 sm:space-y-4 relative z-10">
+            {/* Notes */}
             <div
-              className="surface-sunken rounded-xl p-4 min-h-[80px] cursor-text"
+              className="surface-sunken rounded-xl p-3 sm:p-4 min-h-[60px] sm:min-h-[80px] cursor-text"
               onClick={() => !editingNotes && handleStartEditNotes()}
             >
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Notes</label>
+              <label className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 sm:mb-2 block">Notes</label>
               {editingNotes ? (
                 <textarea
                   autoFocus
                   value={notesValue}
                   onChange={(e) => setNotesValue(e.target.value)}
                   onBlur={handleSaveNotes}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') handleSaveNotes();
-                  }}
-                  className="w-full bg-transparent text-sm text-foreground/80 leading-relaxed resize-none outline-none min-h-[60px] placeholder:text-muted-foreground/30"
+                  onKeyDown={(e) => { if (e.key === 'Escape') handleSaveNotes(); }}
+                  className="w-full bg-transparent text-xs sm:text-sm text-foreground/80 leading-relaxed resize-none outline-none min-h-[50px] sm:min-h-[60px] placeholder:text-muted-foreground/30"
                   placeholder="Type your notes here..."
                 />
               ) : (
-                <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                <div className="text-xs sm:text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
                   {getNonSubtaskNonUrlLines(focusSlot.task.description) || (
                     <span className="text-muted-foreground/40 italic">Click to add notes...</span>
                   )}
@@ -328,24 +340,21 @@ export function ExecuteView({
               )}
             </div>
 
-            {/* Interactive Subtasks */}
+            {/* Subtasks */}
             {focusSubtasks.length > 0 && (
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Subtasks</label>
+                <label className="text-[9px] sm:text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 sm:mb-2 block">Subtasks</label>
                 <div className="space-y-1">
                   {focusSubtasks.map((st, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2.5 py-1.5 w-full hover:bg-secondary/30 rounded-lg px-1.5 -mx-1.5 transition-colors"
+                      className="flex items-center gap-2 sm:gap-2.5 py-1.5 w-full hover:bg-secondary/30 rounded-lg px-1.5 -mx-1.5 transition-colors"
                     >
-                      <button
-                        onClick={() => handleToggleSubtask(st.lineIndex)}
-                        className="shrink-0"
-                      >
+                      <button onClick={() => handleToggleSubtask(st.lineIndex)} className="shrink-0">
                         {st.checked ? (
-                          <CheckSquare className="w-4 h-4 text-accent" />
+                          <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-accent" />
                         ) : (
-                          <Square className="w-4 h-4 text-muted-foreground/40" />
+                          <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground/40" />
                         )}
                       </button>
                       {editingSubtaskIndex === st.lineIndex ? (
@@ -358,11 +367,11 @@ export function ExecuteView({
                             if (e.key === 'Enter') handleSaveSubtask();
                             if (e.key === 'Escape') setEditingSubtaskIndex(null);
                           }}
-                          className="flex-1 bg-transparent text-sm text-foreground outline-none border-b border-accent/40"
+                          className="flex-1 bg-transparent text-xs sm:text-sm text-foreground outline-none border-b border-accent/40"
                         />
                       ) : (
                         <span
-                          className={cn('text-sm flex-1 cursor-text', st.checked && 'line-through text-muted-foreground')}
+                          className={cn('text-xs sm:text-sm flex-1 cursor-text', st.checked && 'line-through text-muted-foreground')}
                           onClick={() => handleStartEditSubtask(st.lineIndex, st.text)}
                         >
                           {st.text}
@@ -377,8 +386,8 @@ export function ExecuteView({
         </div>
       )}
 
-      {/* Daily Playbook - exact same component as Plan view */}
-      <div className="surface-card p-6">
+      {/* Daily Playbook */}
+      <div className="surface-card p-4 sm:p-6">
         <DailyPlaybook
           slots={slots}
           onStartTimer={onStartTimer}
