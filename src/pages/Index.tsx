@@ -24,6 +24,7 @@ const Index = () => {
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState<ViewTab>('plan');
+  const [immersiveMode, setImmersiveMode] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -210,6 +211,8 @@ const Index = () => {
             onDeleteTask={store.deleteTask}
             onUpdateTask={store.updateTask}
             onSetSlotDuration={(slotNumber, seconds) => store.updateSlotTimer(slotNumber, { timeRemaining: seconds })}
+            immersiveMode={immersiveMode}
+            onToggleImmersive={() => setImmersiveMode(prev => !prev)}
           />
         )}
       </div>
