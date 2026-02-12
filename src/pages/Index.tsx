@@ -205,6 +205,7 @@ const Index = () => {
             onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
             onPauseTimer={pauseTimer}
             onCompleteSlot={store.removeTaskFromSlot}
+            onReturnTask={store.returnTaskToBucket}
             onClickTask={setSelectedTask}
             onDeleteTask={store.deleteTask}
             onUpdateTask={store.updateTask}
