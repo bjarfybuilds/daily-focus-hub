@@ -56,14 +56,7 @@ export function ExecuteView({
   const pausedSlot = slots.find(s => s.timerState === 'paused');
   const focusSlot = activeSlot || pausedSlot;
 
-  const inProgressTasks = tasks.filter(t => t.column === 'in-progress');
-  const todoTasks = tasks.filter(t => t.column === 'todo');
-
-  const allTodayTasks = [
-    ...activeTasks.map(a => a.task),
-    ...inProgressTasks.filter(t => !activeTasks.some(a => a.task.id === t.id)),
-    ...todoTasks.slice(0, 5),
-  ];
+  const allTodayTasks = activeTasks.map(a => a.task);
 
   const toggleComplete = (task: Task) => {
     const slotWithTask = slots.find(s => s.task?.id === task.id);
