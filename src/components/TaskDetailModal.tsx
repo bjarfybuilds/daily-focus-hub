@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Task, TaskLogEntry, Priority, BUCKET_COLORS } from '@/types/tasks';
-import { X, Plus, Clock, BookOpen, Pencil, Check, ExternalLink } from 'lucide-react';
+import { Task, TaskLogEntry, Priority, BUCKET_COLORS, BUCKETS } from '@/types/tasks';
+import { X, Plus, Clock, BookOpen, Pencil, Check, ExternalLink, Link2, Trash2, Square, CheckSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TaskDetailModalProps {
@@ -8,6 +8,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onAddLogEntry: (taskId: string, text: string) => void;
+  onDeleteTask?: (taskId: string) => void;
 }
 
 function linkify(text: string) {
@@ -32,17 +33,93 @@ function linkify(text: string) {
   );
 }
 
-export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: TaskDetailModalProps) {
+// Parse description for subtasks (lines starting with [ ] or [x])
+function parseSubtasks(description: string): { text: string; checked: boolean; lineIndex: number }[] {
+  const lines = description.split('\n');
+  const subtasks: { text: string; checked: boolean; lineIndex: number }[] = [];
+  lines.forEach((line, i) => {
+    const unchecked = line.match(/^\s*\[\s*\]\s*(.+)/);
+    const checked = line.match(/^\s*\[x\]\s*(.+)/i);
+    if (unchecked) subtasks.push({ text: unchecked[1], checked: false, lineIndex: i });
+    else if (checked) subtasks.push({ text: checked[1], checked: true, lineIndex: i });
+  });
+  return subtasks;
+}
+
+function toggleSubtask(description: string, lineIndex: number): string {
+  const lines = description.split('\n');
+  const line = lines[lineIndex];
+  if (line.match(/^\s*\[\s*\]/)) {
+    lines[lineIndex] = line.replace(/\[\s*\]/, '[x]');
+  } else if (line.match(/^\s*\[x\]/i)) {
+    lines[lineIndex] = line.replace(/\[x\]/i, '[ ]');
+  }
+  return lines.join('\n');
+}
+
+// Parse links from description (lines starting with @link or just URLs on their own line)
+function parseLinks(description: string): { url: string; label: string }[] {
+  const lines = description.split('\n');
+  const links: { url: string; label: string }[] = [];
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    const urlMatch = trimmed.match(/^(https?:\/\/[^\s]+)$/);
+    if (urlMatch) {
+      try {
+        const url = new URL(urlMatch[1]);
+        links.push({ url: urlMatch[1], label: url.hostname });
+      } catch {
+        links.push({ url: urlMatch[1], label: urlMatch[1] });
+      }
+    }
+  });
+  return links;
+}
+
+export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry, onDeleteTask }: TaskDetailModalProps) {
   const [description, setDescription] = useState(task.description);
   const [newLog, setNewLog] = useState('');
   const [isEditingDesc, setIsEditingDesc] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [editingLogText, setEditingLogText] = useState('');
+  const [newSubtask, setNewSubtask] = useState('');
+  const [newLink, setNewLink] = useState('');
+  const [showAddLink, setShowAddLink] = useState(false);
   const bucketColor = BUCKET_COLORS[task.bucketId];
+  const bucket = BUCKETS.find(b => b.id === task.bucketId);
+
+  const subtasks = parseSubtasks(description);
+  const links = parseLinks(description);
 
   const handleSaveDescription = () => {
     onUpdateTask(task.id, { description });
     setIsEditingDesc(false);
+  };
+
+  const handleToggleSubtask = (lineIndex: number) => {
+    const newDesc = toggleSubtask(description, lineIndex);
+    setDescription(newDesc);
+    onUpdateTask(task.id, { description: newDesc });
+  };
+
+  const handleAddSubtask = () => {
+    if (!newSubtask.trim()) return;
+    const line = `[ ] ${newSubtask.trim()}`;
+    const newDesc = description ? `${description}\n${line}` : line;
+    setDescription(newDesc);
+    onUpdateTask(task.id, { description: newDesc });
+    setNewSubtask('');
+  };
+
+  const handleAddLink = () => {
+    if (!newLink.trim()) return;
+    let url = newLink.trim();
+    if (!url.startsWith('http')) url = `https://${url}`;
+    const newDesc = description ? `${description}\n${url}` : url;
+    setDescription(newDesc);
+    onUpdateTask(task.id, { description: newDesc });
+    setNewLink('');
+    setShowAddLink(false);
   };
 
   const handleAddLog = () => {
@@ -66,6 +143,18 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
     setEditingLogText('');
   };
 
+  // Get non-subtask, non-link lines as "notes"
+  const getNoteLines = () => {
+    if (!description) return '';
+    const lines = description.split('\n');
+    return lines.filter(line => {
+      const trimmed = line.trim();
+      if (trimmed.match(/^\s*\[\s*\]/) || trimmed.match(/^\s*\[x\]/i)) return false;
+      if (trimmed.match(/^https?:\/\/[^\s]+$/)) return false;
+      return true;
+    }).join('\n');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/10 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -73,14 +162,16 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: `hsl(${bucketColor})` }}
-            />
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {task.bucketId}
+        <div className="flex items-center justify-between p-5 pb-3">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+              style={{
+                backgroundColor: `hsl(${bucketColor} / 0.12)`,
+                color: `hsl(${bucketColor})`,
+              }}
+            >
+              {bucket?.label || task.bucketId}
             </span>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-secondary transition-colors flex items-center justify-center">
@@ -88,44 +179,138 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
           </button>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Title */}
+        {/* Title */}
+        <div className="px-5 pb-4">
           <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
+        </div>
 
-          {/* Description */}
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-5">
+
+          {/* Links & Resources */}
           <div>
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Description</label>
-            {isEditingDesc ? (
-              <div className="space-y-2">
-                <textarea
-                  value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  className="w-full bg-secondary/50 rounded-xl p-3 text-sm text-foreground outline-none resize-none min-h-[100px] border border-border focus:border-accent/50 transition-colors"
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-[11px] font-bold text-accent uppercase tracking-wider">Links & Resources</span>
+              <button
+                onClick={() => setShowAddLink(!showAddLink)}
+                className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {showAddLink && (
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  placeholder="Paste URL..."
+                  value={newLink}
+                  onChange={e => setNewLink(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddLink()}
+                  className="flex-1 bg-secondary/50 rounded-lg px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/40 outline-none border border-border focus:border-accent/50 transition-colors"
                   autoFocus
                 />
-                <div className="flex gap-2">
-                  <button onClick={handleSaveDescription} className="text-xs font-medium text-accent hover:text-accent/80 px-3 py-1.5 rounded-lg bg-accent/10">Save</button>
-                  <button onClick={() => { setDescription(task.description); setIsEditingDesc(false); }} className="text-xs text-muted-foreground px-3 py-1.5">Cancel</button>
-                </div>
+                <button onClick={handleAddLink} className="text-xs font-medium text-accent px-2">Add</button>
+              </div>
+            )}
+            {links.length > 0 ? (
+              <div className="space-y-1">
+                {links.map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary/50 transition-colors group"
+                  >
+                    <Link2 className="w-3.5 h-3.5 text-accent shrink-0" />
+                    <span className="text-xs text-foreground truncate">{link.label}</span>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0" />
+                  </a>
+                ))}
               </div>
             ) : (
-              <div
-                onClick={() => setIsEditingDesc(true)}
-                className="text-sm text-foreground/80 cursor-pointer hover:bg-secondary/40 rounded-xl p-3 transition-colors min-h-[48px] whitespace-pre-wrap border border-transparent hover:border-border"
-              >
-                {task.description ? linkify(task.description) : <span className="text-muted-foreground/40 italic">Click to add description...</span>}
-              </div>
+              <p className="text-[11px] text-muted-foreground/40 italic pl-1">No links added</p>
             )}
           </div>
 
-          {/* Meta */}
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <div className="flex items-center gap-1.5 bg-secondary px-2.5 py-1 rounded-full">
-              <Clock className="w-3 h-3" />
-              Created {new Date(task.createdAt).toLocaleDateString()}
+          {/* Subtasks / Checklist */}
+          <div>
+            <div className="space-y-0.5">
+              {subtasks.map((st, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-secondary/30 transition-colors cursor-pointer border-b border-border/40 last:border-b-0"
+                  onClick={() => handleToggleSubtask(st.lineIndex)}
+                >
+                  {st.checked ? (
+                    <CheckSquare className="w-4 h-4 text-accent shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+                  )}
+                  <span className={cn(
+                    'text-sm text-foreground',
+                    st.checked && 'line-through text-muted-foreground'
+                  )}>
+                    {st.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Add subtask inline */}
+            <div className="flex items-center gap-3 mt-1 px-1">
+              <Square className="w-4 h-4 text-muted-foreground/20 shrink-0" />
+              <input
+                type="text"
+                placeholder="Add a subtask..."
+                value={newSubtask}
+                onChange={e => setNewSubtask(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddSubtask();
+                  }
+                }}
+                className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/30 outline-none py-2"
+              />
             </div>
           </div>
+
+          {/* Notes (free-form description) */}
+          {isEditingDesc ? (
+            <div className="space-y-2">
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">Notes</label>
+              <textarea
+                value={getNoteLines()}
+                onChange={e => {
+                  // Rebuild description: keep subtasks and links, replace note lines
+                  const lines = description.split('\n');
+                  const keptLines = lines.filter(line => {
+                    const trimmed = line.trim();
+                    return trimmed.match(/^\s*\[\s*\]/) || trimmed.match(/^\s*\[x\]/i) || trimmed.match(/^https?:\/\/[^\s]+$/);
+                  });
+                  const noteText = e.target.value;
+                  const newDesc = noteText ? `${noteText}\n${keptLines.join('\n')}` : keptLines.join('\n');
+                  setDescription(newDesc);
+                }}
+                className="w-full bg-secondary/50 rounded-xl p-3 text-sm text-foreground outline-none resize-none min-h-[80px] border border-border focus:border-accent/50 transition-colors"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <button onClick={handleSaveDescription} className="text-xs font-medium text-accent hover:text-accent/80 px-3 py-1.5 rounded-lg bg-accent/10">Save</button>
+                <button onClick={() => { setDescription(task.description); setIsEditingDesc(false); }} className="text-xs text-muted-foreground px-3 py-1.5">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            getNoteLines().trim() ? (
+              <div
+                onClick={() => setIsEditingDesc(true)}
+                className="text-sm text-foreground/80 cursor-pointer hover:bg-secondary/40 rounded-xl p-3 transition-colors whitespace-pre-wrap border border-transparent hover:border-border"
+              >
+                {linkify(getNoteLines())}
+              </div>
+            ) : null
+          )}
 
           {/* Logbook */}
           <div>
@@ -137,7 +322,6 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
               )}
             </div>
 
-            {/* Add log entry */}
             <div className="flex gap-2 mb-3">
               <textarea
                 placeholder="Add a log entry..."
@@ -160,13 +344,9 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
               </button>
             </div>
 
-            {/* Log entries */}
-            <div className="space-y-2 max-h-[250px] overflow-y-auto">
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
               {(task.logEntries || []).slice().reverse().map(entry => (
-                <div
-                  key={entry.id}
-                  className="rounded-xl p-3 surface-sunken group"
-                >
+                <div key={entry.id} className="rounded-xl p-3 surface-sunken group">
                   {editingLogId === entry.id ? (
                     <div className="space-y-2">
                       <textarea
@@ -207,6 +387,33 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
               )}
             </div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3 h-3" />
+              Created {new Date(task.createdAt).toLocaleDateString()}
+            </div>
+            <span className="flex items-center gap-1.5">
+              <span className={cn('w-2 h-2 rounded-full', {
+                'bg-destructive': task.priority === 'high',
+                'bg-accent': task.priority === 'medium',
+                'bg-muted-foreground/40': task.priority === 'low',
+              })} />
+              {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} Priority
+            </span>
+          </div>
+          {onDeleteTask && (
+            <button
+              onClick={() => { onDeleteTask(task.id); onClose(); }}
+              className="flex items-center gap-1.5 text-xs text-destructive hover:text-destructive/80 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete Task
+            </button>
+          )}
         </div>
       </div>
     </div>
