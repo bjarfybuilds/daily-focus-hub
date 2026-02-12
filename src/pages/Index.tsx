@@ -37,35 +37,33 @@ const Index = () => {
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingTask(null);
     const { active, over } = event;
-    if (!over) return;
-
     const activeId = String(active.id);
-    const overId = String(over.id);
     const fromSlot = active.data.current?.fromSlot as number | undefined;
 
-    if (overId.startsWith('slot-')) {
-      const slotNumber = parseInt(overId.replace('slot-', ''));
-      const targetSlot = store.slots.find(s => s.slotNumber === slotNumber);
+    if (over) {
+      const overId = String(over.id);
 
-      if (fromSlot !== undefined) {
-        // Moving from one slot to another
-        if (fromSlot !== slotNumber && targetSlot && !targetSlot.task) {
-          const sourceSlot = store.slots.find(s => s.slotNumber === fromSlot);
-          if (sourceSlot?.task) {
-            // Return task to bucket first, then move to new slot
-            store.returnTaskToBucket(fromSlot);
-            // Small delay to allow state to update
-            setTimeout(() => {
-              store.moveTaskToSlot(sourceSlot.task!.id, slotNumber);
-            }, 50);
+      if (overId.startsWith('slot-')) {
+        const slotNumber = parseInt(overId.replace('slot-', ''));
+
+        if (fromSlot !== undefined) {
+          // Slot-to-slot move
+          if (fromSlot !== slotNumber) {
+            store.moveSlotToSlot(fromSlot, slotNumber);
+          }
+        } else {
+          // Bucket-to-slot move
+          const targetSlot = store.slots.find(s => s.slotNumber === slotNumber);
+          if (targetSlot && !targetSlot.task) {
+            store.moveTaskToSlot(activeId, slotNumber);
           }
         }
-      } else if (targetSlot && !targetSlot.task) {
-        // Moving from bucket to slot
-        store.moveTaskToSlot(activeId, slotNumber);
+        return;
       }
-    } else if (fromSlot !== undefined) {
-      // Dragged from a slot but dropped outside slots — return to bucket
+    }
+
+    // Dropped outside any slot — if from a slot, return to bucket
+    if (fromSlot !== undefined) {
       store.returnTaskToBucket(fromSlot);
     }
   };
