@@ -250,13 +250,17 @@ export function useAppStore(userId: string | undefined) {
   }, []);
 
   const updateSlotTimer = useCallback(async (slotNumber: number, updates: Partial<PlaybookSlot>) => {
-    // Only persist timer_state and time_remaining to DB occasionally (not every second)
-    if (updates.timerState !== undefined && userId) {
+    const shouldPersist = updates.timerState !== undefined || updates.timeRemaining !== undefined;
+    if (shouldPersist && userId) {
       const today = new Date().toISOString().split('T')[0];
-      await supabase.from('playbook_slots').update({
-        timer_state: updates.timerState,
-        ...(updates.timeRemaining !== undefined ? { time_remaining: updates.timeRemaining } : {}),
-      }).eq('user_id', userId).eq('slot_number', slotNumber).eq('playbook_date', today);
+      const dbUpdate: Record<string, any> = {};
+      if (updates.timerState !== undefined) dbUpdate.timer_state = updates.timerState;
+      if (updates.timeRemaining !== undefined) dbUpdate.time_remaining = updates.timeRemaining;
+      // Don't persist every tick — only persist time_remaining if timerState changed or it's an explicit duration set
+      if (updates.timerState !== undefined || !('timerState' in updates)) {
+        await supabase.from('playbook_slots').update(dbUpdate)
+          .eq('user_id', userId).eq('slot_number', slotNumber).eq('playbook_date', today);
+      }
     }
 
     setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, ...updates } : s));
