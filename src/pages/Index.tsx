@@ -209,6 +209,7 @@ const Index = () => {
             onClickTask={setSelectedTask}
             onDeleteTask={store.deleteTask}
             onUpdateTask={store.updateTask}
+            onSetSlotDuration={(slotNumber, seconds) => store.updateSlotTimer(slotNumber, { timeRemaining: seconds })}
           />
         )}
       </div>

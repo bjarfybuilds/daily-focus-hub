@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot, Priority } from '@/types/tasks';
-import { Play, Pause, CheckCircle2, Square, CheckSquare } from 'lucide-react';
+import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer } from 'lucide-react';
 import { DailyPlaybook } from './DailyPlaybook';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ interface ExecuteViewProps {
   onClickTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onSetSlotDuration: (slotNumber: number, seconds: number) => void;
 }
 
 function formatTime(seconds: number) {
@@ -34,6 +36,46 @@ function parseSubtasks(description: string): { text: string; checked: boolean; l
   return subtasks;
 }
 
+function getNonSubtaskNonUrlLines(description: string): string {
+  return description.split('\n').filter(l => {
+    const t = l.trim();
+    return !t.match(/^\s*\[\s*\]/) && !t.match(/^\s*\[x\]/i) && !t.match(/^https?:\/\/[^\s]+$/);
+  }).join('\n');
+}
+
+function toggleSubtaskInDescription(description: string, lineIndex: number): string {
+  const lines = description.split('\n');
+  const line = lines[lineIndex];
+  if (line.match(/^\s*\[x\]/i)) {
+    lines[lineIndex] = line.replace(/\[x\]/i, '[ ]');
+  } else if (line.match(/^\s*\[\s*\]/)) {
+    lines[lineIndex] = line.replace(/\[\s*\]/, '[x]');
+  }
+  return lines.join('\n');
+}
+
+function updateNotesInDescription(description: string, newNotes: string): string {
+  const lines = description.split('\n');
+  // Preserve subtask lines and URL lines, replace everything else
+  const preserved: { index: number; line: string }[] = [];
+  lines.forEach((line, i) => {
+    const t = line.trim();
+    if (t.match(/^\s*\[\s*\]/) || t.match(/^\s*\[x\]/i) || t.match(/^https?:\/\/[^\s]+$/)) {
+      preserved.push({ index: i, line });
+    }
+  });
+  
+  const noteLines = newNotes.split('\n').filter(l => l.trim().length > 0);
+  return [...noteLines, ...preserved.map(p => p.line)].join('\n');
+}
+
+const DURATION_PRESETS = [
+  { label: '15m', seconds: 15 * 60 },
+  { label: '30m', seconds: 30 * 60 },
+  { label: '45m', seconds: 45 * 60 },
+  { label: '60m', seconds: 60 * 60 },
+];
+
 export function ExecuteView({
   slots,
   tasks,
@@ -44,10 +86,14 @@ export function ExecuteView({
   onClickTask,
   onDeleteTask,
   onUpdateTask,
+  onSetSlotDuration,
 }: ExecuteViewProps) {
   const activeSlot = slots.find(s => s.timerState === 'running');
   const pausedSlot = slots.find(s => s.timerState === 'paused');
   const focusSlot = activeSlot || pausedSlot;
+
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState('');
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -59,6 +105,28 @@ export function ExecuteView({
   const focusBucketColor = focusSlot?.task ? BUCKET_COLORS[focusSlot.task.bucketId] : null;
   const focusBucket = focusSlot?.task ? BUCKETS.find(b => b.id === focusSlot.task!.bucketId) : null;
   const focusSubtasks = focusSlot?.task ? parseSubtasks(focusSlot.task.description) : [];
+
+  const handleToggleSubtask = (lineIndex: number) => {
+    if (!focusSlot?.task) return;
+    const newDesc = toggleSubtaskInDescription(focusSlot.task.description, lineIndex);
+    onUpdateTask(focusSlot.task.id, { description: newDesc });
+  };
+
+  const handleStartEditNotes = () => {
+    if (!focusSlot?.task) return;
+    setNotesValue(getNonSubtaskNonUrlLines(focusSlot.task.description));
+    setEditingNotes(true);
+  };
+
+  const handleSaveNotes = () => {
+    if (!focusSlot?.task) return;
+    const newDesc = updateNotesInDescription(focusSlot.task.description, notesValue);
+    onUpdateTask(focusSlot.task.id, { description: newDesc });
+    setEditingNotes(false);
+  };
+
+  // Determine which duration preset is closest to current timeRemaining
+  const currentDuration = focusSlot?.timeRemaining ?? 3600;
 
   return (
     <div className="flex-1 overflow-y-auto p-8 max-w-4xl mx-auto w-full">
@@ -97,38 +165,78 @@ export function ExecuteView({
               </h2>
             </div>
 
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end gap-2">
               <span className={cn(
                 'text-5xl font-mono font-bold tracking-tight',
                 focusSlot.timerState === 'running' ? 'text-accent' : 'text-foreground'
               )}>
                 {formatTime(focusSlot.timeRemaining)}
               </span>
+              {/* Duration presets */}
+              {focusSlot.timerState !== 'running' && (
+                <div className="flex items-center gap-1.5">
+                  <Timer className="w-3 h-3 text-muted-foreground/50" />
+                  {DURATION_PRESETS.map(preset => (
+                    <button
+                      key={preset.seconds}
+                      onClick={() => onSetSlotDuration(focusSlot.slotNumber, preset.seconds)}
+                      className={cn(
+                        'px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all',
+                        currentDuration === preset.seconds
+                          ? 'bg-accent/15 text-accent'
+                          : 'text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary'
+                      )}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-[1fr_auto] gap-6 mt-6">
             <div className="space-y-4">
-              <div className="surface-sunken rounded-xl p-4 min-h-[120px]">
+              {/* Editable Notes */}
+              <div
+                className="surface-sunken rounded-xl p-4 min-h-[120px] cursor-text"
+                onClick={() => !editingNotes && handleStartEditNotes()}
+              >
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Notes</label>
-                {focusSlot.task.description ? (
-                  <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
-                    {focusSlot.task.description.split('\n').filter(l => {
-                      const t = l.trim();
-                      return !t.match(/^\s*\[\s*\]/) && !t.match(/^\s*\[x\]/i) && !t.match(/^https?:\/\/[^\s]+$/);
-                    }).join('\n') || 'No notes yet...'}
+                {editingNotes ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      autoFocus
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      onBlur={handleSaveNotes}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') handleSaveNotes();
+                      }}
+                      className="w-full bg-transparent text-sm text-foreground/80 leading-relaxed resize-none outline-none min-h-[80px] placeholder:text-muted-foreground/30"
+                      placeholder="Type your notes here..."
+                    />
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground/40 italic">Add notes in the task detail...</p>
+                  <div className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
+                    {getNonSubtaskNonUrlLines(focusSlot.task.description) || (
+                      <span className="text-muted-foreground/40 italic">Click to add notes...</span>
+                    )}
+                  </div>
                 )}
               </div>
 
+              {/* Interactive Subtasks */}
               {focusSubtasks.length > 0 && (
                 <div>
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 block">Subtasks</label>
                   <div className="space-y-1">
                     {focusSubtasks.map((st, i) => (
-                      <div key={i} className="flex items-center gap-2.5 py-1.5">
+                      <button
+                        key={i}
+                        className="flex items-center gap-2.5 py-1.5 w-full text-left hover:bg-secondary/30 rounded-lg px-1.5 -mx-1.5 transition-colors"
+                        onClick={() => handleToggleSubtask(st.lineIndex)}
+                      >
                         {st.checked ? (
                           <CheckSquare className="w-4 h-4 text-accent shrink-0" />
                         ) : (
@@ -137,7 +245,7 @@ export function ExecuteView({
                         <span className={cn('text-sm', st.checked && 'line-through text-muted-foreground')}>
                           {st.text}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
