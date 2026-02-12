@@ -47,17 +47,21 @@ const Index = () => {
         const slotNumber = parseInt(overId.replace('slot-', ''));
 
         if (fromSlot !== undefined) {
-          // Slot-to-slot move
           if (fromSlot !== slotNumber) {
             store.moveSlotToSlot(fromSlot, slotNumber);
           }
         } else {
-          // Bucket-to-slot move
           const targetSlot = store.slots.find(s => s.slotNumber === slotNumber);
           if (targetSlot && !targetSlot.task) {
             store.moveTaskToSlot(activeId, slotNumber);
           }
         }
+        return;
+      }
+
+      // Dropped on a bucket — return task from slot to that bucket
+      if (overId.startsWith('bucket-') && fromSlot !== undefined) {
+        store.returnTaskToBucket(fromSlot);
         return;
       }
     }

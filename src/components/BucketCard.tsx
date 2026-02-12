@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useDroppable } from '@dnd-kit/core';
 import { Task, BucketId, BUCKETS, BUCKET_COLORS, Priority } from '@/types/tasks';
 import { TaskCard } from './TaskCard';
 import { Plus, X } from 'lucide-react';
@@ -39,8 +40,13 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTa
     setPriority('medium');
   };
 
+  const { setNodeRef, isOver } = useDroppable({
+    id: `bucket-${bucketId}`,
+    data: { bucketId },
+  });
+
   return (
-    <div className="surface-card p-3.5 flex flex-col h-full">
+    <div ref={setNodeRef} className={cn("surface-card p-3.5 flex flex-col h-full transition-all", isOver && "ring-2 ring-accent/30 bg-accent/5")}>
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5">
