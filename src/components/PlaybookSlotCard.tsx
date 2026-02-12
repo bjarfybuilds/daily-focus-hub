@@ -28,14 +28,21 @@ function SlotTaskDraggable({ slot, children }: { slot: PlaybookSlot; children: R
   return (
     <div
       ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       className={cn(
-        'cursor-grab active:cursor-grabbing flex-1 flex flex-col',
+        'flex-1 flex gap-2',
         isDragging && 'opacity-30'
       )}
     >
-      {children}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center cursor-grab active:cursor-grabbing touch-none py-1 px-0.5 -ml-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        {children}
+      </div>
     </div>
   );
 }
