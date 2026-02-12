@@ -391,10 +391,10 @@ export function ExecuteView({
               {onToggleImmersive && (
                 <button
                   onClick={onToggleImmersive}
-                  className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-accent hover:bg-accent/10 transition-all"
+                  className="p-2 rounded-lg text-accent/70 hover:text-accent hover:bg-accent/15 transition-all"
                   title="Enter immersive mode"
                 >
-                  <Maximize2 className="w-3.5 h-3.5" />
+                  <Maximize2 className="w-4 h-4" />
                 </button>
               )}
             </div>
