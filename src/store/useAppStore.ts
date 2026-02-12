@@ -191,6 +191,36 @@ export function useAppStore(userId: string | undefined) {
     setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600 } : s));
   }, [slots, userId]);
 
+  const moveSlotToSlot = useCallback(async (fromSlotNumber: number, toSlotNumber: number) => {
+    if (!userId) return;
+    const fromSlot = slots.find(s => s.slotNumber === fromSlotNumber);
+    if (!fromSlot?.task) return;
+    const toSlot = slots.find(s => s.slotNumber === toSlotNumber);
+    if (toSlot?.task) return; // target must be empty
+
+    const task = fromSlot.task;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Delete old slot, upsert new slot in DB
+    await supabase.from('playbook_slots').delete()
+      .eq('user_id', userId).eq('slot_number', fromSlotNumber).eq('playbook_date', today);
+
+    await supabase.from('playbook_slots').upsert({
+      user_id: userId,
+      slot_number: toSlotNumber,
+      task_id: task.id,
+      timer_state: 'idle',
+      time_remaining: 3600,
+      playbook_date: today,
+    }, { onConflict: 'user_id,slot_number,playbook_date' });
+
+    setSlots(prev => prev.map(s => {
+      if (s.slotNumber === fromSlotNumber) return { ...s, task: null, timerState: 'idle', timeRemaining: 3600 };
+      if (s.slotNumber === toSlotNumber) return { ...s, task, timerState: 'idle', timeRemaining: 3600 };
+      return s;
+    }));
+  }, [slots, userId]);
+
   const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     const dbUpdates: Record<string, any> = {};
     if (updates.title !== undefined) dbUpdates.title = updates.title;
@@ -240,7 +270,7 @@ export function useAppStore(userId: string | undefined) {
     tasks, slots, activeBucket, chatOpen, loading,
     setActiveBucket, setChatOpen,
     addTask, updateTaskColumn, deleteTask,
-    moveTaskToSlot, removeTaskFromSlot, returnTaskToBucket,
+    moveTaskToSlot, moveSlotToSlot, removeTaskFromSlot, returnTaskToBucket,
     updateTask, addLogEntry, updateSlotTimer,
     getTasksByBucket,
   };
