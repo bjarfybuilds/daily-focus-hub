@@ -9,7 +9,7 @@ import { StatusLogModal } from '@/components/StatusLogModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
-import { Bot, Sparkles, LayoutGrid, Target } from 'lucide-react';
+import { Bot, Sparkles, LayoutGrid, Target, MessageCircle } from 'lucide-react';
 
 const leftBuckets = BUCKETS.slice(0, 4);
 const rightBuckets = BUCKETS.slice(4, 8);
@@ -84,6 +84,9 @@ const Index = () => {
     }
   };
 
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
   const renderBucketColumn = (buckets: typeof BUCKETS) => (
     <div className="flex flex-col gap-3 h-full">
       {buckets.map(bucket => (
@@ -104,48 +107,61 @@ const Index = () => {
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-screen overflow-hidden bg-background">
         {/* Top bar */}
-        <header className="flex items-center justify-between px-6 py-3 border-b border-border/50 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-accent" />
-              <span className="text-sm font-bold tracking-tight text-foreground">CHAT GSD</span>
+        <header className="flex items-center justify-between px-8 py-4 shrink-0">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-accent-foreground" />
+              </div>
+              <span className="text-base font-bold tracking-tight text-foreground">CHAT GSD</span>
             </div>
 
             {/* View Tabs */}
-            <div className="flex items-center bg-secondary/50 rounded-xl p-0.5">
+            <div className="flex items-center surface-sunken p-1 rounded-2xl">
               <button
                 onClick={() => setActiveTab('plan')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === 'plan' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'plan'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <LayoutGrid className="w-3.5 h-3.5" />
+                <LayoutGrid className="w-4 h-4" />
                 Plan
               </button>
               <button
                 onClick={() => setActiveTab('execute')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${activeTab === 'execute' ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                  activeTab === 'execute'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <Target className="w-3.5 h-3.5" />
+                <Target className="w-4 h-4" />
                 Execute
               </button>
             </div>
           </div>
 
-          <button
-            onClick={() => store.setChatOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-accent bg-accent/10 hover:bg-accent/15 transition-colors"
-          >
-            <Bot className="w-4 h-4" />
-            Chat
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">{dateStr}</span>
+            <button
+              onClick={() => store.setChatOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-medium surface-interactive"
+            >
+              <MessageCircle className="w-4 h-4 text-accent" />
+              <span>AI Chat</span>
+            </button>
+          </div>
         </header>
 
         {/* Content */}
         {activeTab === 'plan' ? (
-          <div className="flex-1 grid grid-cols-[1fr_minmax(320px,1.2fr)_1fr] gap-4 p-4 overflow-hidden min-h-0">
-            <div className="overflow-y-auto min-h-0">
+          <div className="flex-1 grid grid-cols-[1fr_minmax(340px,1.3fr)_1fr] gap-4 px-6 pb-6 overflow-hidden min-h-0">
+            <div className="overflow-y-auto min-h-0 pr-1">
               {renderBucketColumn(leftBuckets)}
             </div>
-            <div className="overflow-y-auto min-h-0">
+            <div className="overflow-y-auto min-h-0 px-1">
               <DailyPlaybook
                 slots={store.slots}
                 onStartTimer={(n) => store.updateSlotTimer(n, { timerState: 'running' })}
@@ -155,7 +171,7 @@ const Index = () => {
                 onClickTask={setSelectedTask}
               />
             </div>
-            <div className="overflow-y-auto min-h-0">
+            <div className="overflow-y-auto min-h-0 pl-1">
               {renderBucketColumn(rightBuckets)}
             </div>
           </div>

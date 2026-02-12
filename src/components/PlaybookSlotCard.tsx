@@ -1,6 +1,6 @@
 import { useDroppable } from '@dnd-kit/core';
 import { PlaybookSlot, BUCKET_COLORS } from '@/types/tasks';
-import { Play, Pause, RotateCcw, Check, Undo2 } from 'lucide-react';
+import { Play, Pause, Check, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PlaybookSlotCardProps {
@@ -33,29 +33,29 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
     <div
       ref={setNodeRef}
       className={cn(
-        'relative rounded-xl transition-all duration-300 overflow-hidden',
-        slot.task ? 'glass' : 'border-2 border-dashed border-border/40',
-        isOver && !slot.task && 'border-accent bg-accent/5 scale-[1.02]',
-        isActive && 'ring-2 ring-accent/50',
+        'relative rounded-2xl transition-all duration-300 overflow-hidden',
+        slot.task ? 'surface-card' : 'border-2 border-dashed border-border/60 bg-secondary/30',
+        isOver && !slot.task && 'border-accent bg-accent/5 scale-[1.01]',
+        isActive && 'ring-2 ring-accent/30',
       )}
     >
       {/* Progress bar */}
       {slot.task && slot.timerState !== 'idle' && (
-        <div className="absolute bottom-0 left-0 h-0.5 bg-accent transition-all duration-1000" style={{ width: `${progress}%` }} />
+        <div className="absolute bottom-0 left-0 h-1 rounded-full bg-accent/60 transition-all duration-1000" style={{ width: `${progress}%` }} />
       )}
 
-      <div className="p-3 min-h-[100px] flex flex-col">
-        <div className="flex items-center justify-between mb-2">
+      <div className="p-3.5 min-h-[72px] flex flex-col">
+        <div className="flex items-center justify-between mb-1.5">
           <span className={cn(
-            'text-xs font-bold tracking-widest',
+            'text-[10px] font-bold tracking-widest',
             isActive ? 'text-accent' : 'text-muted-foreground/40'
           )}>
             {String(slot.slotNumber).padStart(2, '0')}
           </span>
           {slot.task && (
             <span className={cn(
-              'text-xs font-mono tabular-nums',
-              isActive && 'text-accent animate-pulse-accent'
+              'text-xs font-mono tabular-nums font-medium',
+              isActive ? 'text-accent' : 'text-muted-foreground'
             )}>
               {formatTime(slot.timeRemaining)}
             </span>
@@ -65,48 +65,51 @@ export function PlaybookSlotCard({ slot, onStartTimer, onPauseTimer, onCompleteS
         {slot.task ? (
           <>
             <div className="flex-1 mb-2 cursor-pointer" onClick={() => onClickTask?.(slot.task!)}>
-              <p className="text-sm font-medium text-foreground leading-snug hover:text-accent transition-colors">{slot.task.title}</p>
+              <p className="text-sm font-semibold text-foreground leading-snug hover:text-accent transition-colors">{slot.task.title}</p>
               {slot.task.description && (
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{slot.task.description}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{slot.task.description}</p>
               )}
-              <span 
-                className="text-[9px] uppercase tracking-wider mt-1 inline-block font-semibold"
-                style={{ color: bucketColor ? `hsl(${bucketColor})` : undefined }}
-              >
-                {slot.task.bucketId}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: bucketColor ? `hsl(${bucketColor})` : undefined }}
+                />
+                <span className="text-[9px] text-muted-foreground font-medium uppercase tracking-wider">
+                  {slot.task.bucketId}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {slot.timerState === 'idle' || slot.timerState === 'paused' ? (
                 <button
                   onClick={() => onStartTimer(slot.slotNumber)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-semibold text-xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs"
                 >
-                  <Play className="w-4 h-4" />
-                  <span>Start</span>
+                  <Play className="w-3.5 h-3.5" />
+                  <span>{slot.timerState === 'paused' ? 'Resume' : 'Start'}</span>
                 </button>
               ) : (
                 <button
                   onClick={() => onPauseTimer(slot.slotNumber)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-semibold text-xs animate-pulse-accent"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 transition-colors font-medium text-xs animate-pulse-accent"
                 >
-                  <Pause className="w-4 h-4" />
+                  <Pause className="w-3.5 h-3.5" />
                   <span>Pause</span>
                 </button>
               )}
               <button
                 onClick={() => onReturnTask(slot.slotNumber)}
-                className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                 title="Return to bucket"
               >
-                <Undo2 className="w-4 h-4" />
+                <Undo2 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => onCompleteSlot(slot.slotNumber)}
-                className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
                 title="Mark complete"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-3.5 h-3.5" />
               </button>
             </div>
           </>

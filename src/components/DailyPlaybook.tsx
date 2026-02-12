@@ -16,17 +16,17 @@ export function DailyPlaybook({ slots, onStartTimer, onPauseTimer, onCompleteSlo
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 rounded-xl bg-accent/10">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-2xl bg-accent/10 flex items-center justify-center">
           <Zap className="w-5 h-5 text-accent" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Daily Playbook</h1>
-          <p className="text-xs text-muted-foreground">{filledCount}/8 slots filled</p>
+          <h1 className="text-lg font-bold text-foreground tracking-tight">Daily Playbook</h1>
+          <p className="text-xs text-muted-foreground">{filledCount} of 8 slots filled</p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 flex-1">
+      <div className="flex flex-col gap-2.5 flex-1">
         {slots.map(slot => (
           <PlaybookSlotCard
             key={slot.slotNumber}
