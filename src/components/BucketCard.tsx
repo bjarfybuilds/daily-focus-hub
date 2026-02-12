@@ -40,32 +40,41 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTa
   };
 
   return (
-    <div className="glass rounded-xl p-3 flex flex-col h-full" style={{ borderLeft: `3px solid hsl(${bucketColor})` }}>
+    <div className="surface-card p-3.5 flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="w-3.5 h-3.5" style={{ color: `hsl(${bucketColor})` }} />}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className="w-7 h-7 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: `hsl(${bucketColor} / 0.12)` }}
+          >
+            {Icon && <Icon className="w-3.5 h-3.5" style={{ color: `hsl(${bucketColor})` }} />}
+          </div>
           <span className="text-xs font-semibold text-foreground tracking-tight">{bucket.label}</span>
-          <span className="text-[10px] text-muted-foreground/50">{todoTasks.length}</span>
+          {todoTasks.length > 0 && (
+            <span className="text-[10px] font-medium text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
+              {todoTasks.length}
+            </span>
+          )}
         </div>
         <button
           onClick={() => setShowAdd(!showAdd)}
-          className="p-1 rounded-md hover:bg-secondary transition-colors"
+          className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
         >
-          {showAdd ? <X className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+          {showAdd ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
         </button>
       </div>
 
       {/* Add form */}
       {showAdd && (
-        <div className="glass-subtle rounded-lg p-2 mb-2 space-y-1.5">
+        <div className="surface-sunken p-3 mb-3 space-y-2">
           <input
             type="text"
             placeholder="Task title..."
             value={title}
             onChange={e => setTitle(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="w-full bg-transparent text-xs font-medium placeholder:text-muted-foreground/50 outline-none"
+            className="w-full bg-transparent text-xs font-medium placeholder:text-muted-foreground/50 outline-none text-foreground"
             autoFocus
           />
           <input
@@ -73,7 +82,7 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTa
             placeholder="Description..."
             value={desc}
             onChange={e => setDesc(e.target.value)}
-            className="w-full bg-transparent text-[11px] placeholder:text-muted-foreground/50 outline-none"
+            className="w-full bg-transparent text-[11px] placeholder:text-muted-foreground/50 outline-none text-foreground"
           />
           <div className="flex items-center gap-1.5">
             {(['low', 'medium', 'high'] as Priority[]).map(p => (
@@ -81,14 +90,16 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTa
                 key={p}
                 onClick={() => setPriority(p)}
                 className={cn(
-                  'text-[9px] px-1.5 py-0.5 rounded-full uppercase tracking-wide transition-all',
-                  priority === p ? 'bg-accent text-accent-foreground' : 'bg-secondary text-muted-foreground'
+                  'text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wide transition-all font-medium',
+                  priority === p
+                    ? 'bg-accent text-accent-foreground'
+                    : 'bg-secondary text-muted-foreground hover:text-foreground'
                 )}
               >
                 {p}
               </button>
             ))}
-            <button onClick={handleAdd} className="ml-auto text-[10px] font-medium text-accent">Add</button>
+            <button onClick={handleAdd} className="ml-auto text-[10px] font-semibold text-accent hover:text-accent/80">Add</button>
           </div>
         </div>
       )}
@@ -99,7 +110,7 @@ export function BucketCard({ bucketId, tasks, onAddTask, onDeleteTask, onClickTa
           <TaskCard key={task.id} task={task} onDelete={onDeleteTask} onClick={onClickTask} />
         ))}
         {todoTasks.length === 0 && !showAdd && (
-          <p className="text-[10px] text-muted-foreground/30 text-center py-4">No tasks</p>
+          <p className="text-[10px] text-muted-foreground/40 text-center py-4">No tasks</p>
         )}
       </div>
     </div>

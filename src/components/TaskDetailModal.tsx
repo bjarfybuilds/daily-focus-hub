@@ -10,12 +10,6 @@ interface TaskDetailModalProps {
   onAddLogEntry: (taskId: string, text: string) => void;
 }
 
-const priorityStyles: Record<string, string> = {
-  high: 'bg-destructive/10 text-destructive',
-  medium: 'bg-accent/15 text-accent',
-  low: 'bg-muted text-muted-foreground',
-};
-
 function linkify(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
@@ -73,55 +67,52 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/10 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="glass rounded-2xl w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden"
+        className="surface-raised w-full max-w-lg mx-4 max-h-[85vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
-        style={{ borderTop: `3px solid hsl(${bucketColor})` }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border/30">
-          <div className="flex items-center gap-2">
-            <span
-              className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: `hsl(${bucketColor} / 0.15)`, color: `hsl(${bucketColor})` }}
-            >
+        <div className="flex items-center justify-between p-5 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: `hsl(${bucketColor})` }}
+            />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               {task.bucketId}
             </span>
-            <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full uppercase', priorityStyles[task.priority])}>
-              {task.priority}
-            </span>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-secondary transition-colors">
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-secondary transition-colors flex items-center justify-center">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Title */}
-          <h2 className="text-lg font-bold text-foreground">{task.title}</h2>
+          <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
 
           {/* Description */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Description</label>
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Description</label>
             {isEditingDesc ? (
               <div className="space-y-2">
                 <textarea
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="w-full bg-secondary/50 rounded-lg p-2 text-sm text-foreground outline-none resize-none min-h-[80px] border border-border/30 focus:border-accent/50 transition-colors"
+                  className="w-full bg-secondary/50 rounded-xl p-3 text-sm text-foreground outline-none resize-none min-h-[100px] border border-border focus:border-accent/50 transition-colors"
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <button onClick={handleSaveDescription} className="text-xs font-medium text-accent hover:text-accent/80">Save</button>
-                  <button onClick={() => { setDescription(task.description); setIsEditingDesc(false); }} className="text-xs text-muted-foreground">Cancel</button>
+                  <button onClick={handleSaveDescription} className="text-xs font-medium text-accent hover:text-accent/80 px-3 py-1.5 rounded-lg bg-accent/10">Save</button>
+                  <button onClick={() => { setDescription(task.description); setIsEditingDesc(false); }} className="text-xs text-muted-foreground px-3 py-1.5">Cancel</button>
                 </div>
               </div>
             ) : (
               <div
                 onClick={() => setIsEditingDesc(true)}
-                className="text-sm text-foreground/80 cursor-pointer hover:bg-secondary/30 rounded-lg p-2 transition-colors min-h-[40px] whitespace-pre-wrap"
+                className="text-sm text-foreground/80 cursor-pointer hover:bg-secondary/40 rounded-xl p-3 transition-colors min-h-[48px] whitespace-pre-wrap border border-transparent hover:border-border"
               >
                 {task.description ? linkify(task.description) : <span className="text-muted-foreground/40 italic">Click to add description...</span>}
               </div>
@@ -130,7 +121,7 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
 
           {/* Meta */}
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 bg-secondary px-2.5 py-1 rounded-full">
               <Clock className="w-3 h-3" />
               Created {new Date(task.createdAt).toLocaleDateString()}
             </div>
@@ -138,16 +129,18 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
 
           {/* Logbook */}
           <div>
-            <div className="flex items-center gap-1.5 mb-2">
+            <div className="flex items-center gap-2 mb-3">
               <BookOpen className="w-3.5 h-3.5 text-muted-foreground" />
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Logbook</label>
-              <span className="text-[10px] text-muted-foreground/50">{task.logEntries?.length || 0}</span>
+              <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Logbook</label>
+              {(task.logEntries?.length || 0) > 0 && (
+                <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">{task.logEntries?.length}</span>
+              )}
             </div>
 
             {/* Add log entry */}
             <div className="flex gap-2 mb-3">
               <textarea
-                placeholder="Add a log entry... (paste links, they'll be clickable)"
+                placeholder="Add a log entry..."
                 value={newLog}
                 onChange={e => setNewLog(e.target.value)}
                 onKeyDown={e => {
@@ -157,12 +150,11 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
                   }
                 }}
                 rows={2}
-                className="flex-1 bg-secondary/50 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/40 outline-none border border-border/30 focus:border-accent/50 transition-colors resize-none"
+                className="flex-1 bg-secondary/50 rounded-xl px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/40 outline-none border border-border focus:border-accent/50 transition-colors resize-none"
               />
               <button
                 onClick={handleAddLog}
-                className="p-2 rounded-lg text-accent hover:bg-accent/10 transition-colors self-end"
-                style={{ color: `hsl(${bucketColor})` }}
+                className="w-9 h-9 rounded-xl bg-accent/10 text-accent hover:bg-accent/15 transition-colors flex items-center justify-center self-end"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -173,21 +165,21 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
               {(task.logEntries || []).slice().reverse().map(entry => (
                 <div
                   key={entry.id}
-                  className="rounded-lg p-3 border border-border/20 bg-secondary/20 hover:bg-secondary/30 transition-colors group"
+                  className="rounded-xl p-3 surface-sunken group"
                 >
                   {editingLogId === entry.id ? (
                     <div className="space-y-2">
                       <textarea
                         value={editingLogText}
                         onChange={e => setEditingLogText(e.target.value)}
-                        className="w-full bg-secondary/50 rounded-lg p-2 text-xs text-foreground outline-none resize-none min-h-[60px] border border-border/30 focus:border-accent/50 transition-colors"
+                        className="w-full bg-card rounded-xl p-2.5 text-xs text-foreground outline-none resize-none min-h-[60px] border border-border focus:border-accent/50 transition-colors"
                         autoFocus
                       />
                       <div className="flex gap-2">
-                        <button onClick={handleSaveLog} className="text-xs font-medium text-accent hover:text-accent/80 flex items-center gap-1">
+                        <button onClick={handleSaveLog} className="text-xs font-medium text-accent hover:text-accent/80 flex items-center gap-1 px-2 py-1 rounded-lg bg-accent/10">
                           <Check className="w-3 h-3" /> Save
                         </button>
-                        <button onClick={() => setEditingLogId(null)} className="text-xs text-muted-foreground">Cancel</button>
+                        <button onClick={() => setEditingLogId(null)} className="text-xs text-muted-foreground px-2 py-1">Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -195,13 +187,13 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
                       <div className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
                         {linkify(entry.text)}
                       </div>
-                      <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex items-center justify-between mt-2">
                         <p className="text-[10px] text-muted-foreground/50">
                           {new Date(entry.createdAt).toLocaleString()}
                         </p>
                         <button
                           onClick={() => handleEditLog(entry)}
-                          className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-secondary/50 transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-card transition-all"
                         >
                           <Pencil className="w-3 h-3 text-muted-foreground" />
                         </button>
@@ -211,7 +203,7 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry }: 
                 </div>
               ))}
               {(!task.logEntries || task.logEntries.length === 0) && (
-                <p className="text-[11px] text-muted-foreground/30 text-center py-3">No log entries yet</p>
+                <p className="text-[11px] text-muted-foreground/30 text-center py-4">No log entries yet</p>
               )}
             </div>
           </div>

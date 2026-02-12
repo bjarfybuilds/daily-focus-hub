@@ -1,5 +1,5 @@
 import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot, Priority } from '@/types/tasks';
-import { CheckCircle2, Circle, Trash2, ChevronDown, Target, Plus } from 'lucide-react';
+import { CheckCircle2, Circle, Trash2, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ExecuteViewProps {
@@ -13,10 +13,10 @@ interface ExecuteViewProps {
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
 }
 
-const priorityConfig: Record<Priority, { label: string; color: string; dot: string }> = {
-  high: { label: 'High', color: 'text-red-400', dot: 'bg-red-400' },
-  medium: { label: 'Medium', color: 'text-emerald-400', dot: 'bg-emerald-400' },
-  low: { label: 'Low', color: 'text-blue-400', dot: 'bg-blue-400' },
+const priorityConfig: Record<Priority, { label: string; dotClass: string }> = {
+  high: { label: 'High', dotClass: 'bg-destructive' },
+  medium: { label: 'Medium', dotClass: 'bg-accent' },
+  low: { label: 'Low', dotClass: 'bg-muted-foreground/40' },
 };
 
 function formatTime(seconds: number) {
@@ -35,30 +35,24 @@ export function ExecuteView({
   onDeleteTask,
   onUpdateTask,
 }: ExecuteViewProps) {
-  // Get today's active tasks from slots
   const activeTasks = slots
     .filter(s => s.task)
     .map(s => ({ slot: s, task: s.task! }));
 
-  // Also show all in-progress tasks not in slots
   const inProgressTasks = tasks.filter(t => t.column === 'in-progress');
   const todoTasks = tasks.filter(t => t.column === 'todo');
 
-  // Combine: slot tasks first, then in-progress, then today's todos
   const allTodayTasks = [
     ...activeTasks.map(a => a.task),
     ...inProgressTasks.filter(t => !activeTasks.some(a => a.task.id === t.id)),
-    ...todoTasks.slice(0, 5), // Show top 5 todos
+    ...todoTasks.slice(0, 5),
   ];
 
   const toggleComplete = (task: Task) => {
-    // Find if this task is in a playbook slot
     const slotWithTask = slots.find(s => s.task?.id === task.id);
     if (slotWithTask) {
-      // Complete the slot (removes from slot, marks as done in DB)
       onCompleteSlot(slotWithTask.slotNumber);
     } else {
-      // Update task status to done in DB
       onUpdateTask(task.id, { column: 'done' });
     }
   };
@@ -70,22 +64,21 @@ export function ExecuteView({
     return 'Good Evening';
   };
 
-  // Find active timer
   const activeSlot = slots.find(s => s.timerState === 'running');
   const pausedSlot = slots.find(s => s.timerState === 'paused');
   const focusSlot = activeSlot || pausedSlot;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 max-w-3xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto p-8 max-w-3xl mx-auto w-full">
       {/* Greeting */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">{greeting()} 👋</h1>
         <p className="text-muted-foreground text-sm mt-1">What do you plan to execute today?</p>
       </div>
 
-      {/* Focus Mode - Active Timer */}
+      {/* Focus Mode */}
       {focusSlot?.task && (
-        <div className="glass rounded-2xl p-5 mb-6 border border-accent/20">
+        <div className="surface-raised p-6 mb-6 border-l-4 border-l-accent">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Target className="w-4 h-4 text-accent" />
@@ -103,21 +96,21 @@ export function ExecuteView({
             {focusSlot.timerState === 'running' ? (
               <button
                 onClick={() => onPauseTimer(focusSlot.slotNumber)}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
+                className="px-5 py-2 rounded-xl text-sm font-medium bg-secondary text-foreground hover:bg-secondary/80 transition-colors"
               >
                 Pause
               </button>
             ) : (
               <button
                 onClick={() => onStartTimer(focusSlot.slotNumber)}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
+                className="px-5 py-2 rounded-xl text-sm font-medium bg-accent text-accent-foreground hover:bg-accent/90 transition-colors"
               >
                 {focusSlot.timerState === 'paused' ? 'Resume' : 'Start Focus'}
               </button>
             )}
             <button
               onClick={() => onCompleteSlot(focusSlot.slotNumber)}
-              className="px-4 py-2 rounded-xl text-sm font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+              className="px-5 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent hover:bg-accent/15 transition-colors"
             >
               Complete
             </button>
@@ -126,10 +119,10 @@ export function ExecuteView({
       )}
 
       {/* Today's Tasks */}
-      <div className="glass rounded-2xl p-5">
-        <div className="flex items-center justify-between mb-4">
+      <div className="surface-card p-6">
+        <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-foreground">Today's Tasks</h2>
-          <span className="text-xs text-muted-foreground">{allTodayTasks.length} tasks</span>
+          <span className="text-xs text-muted-foreground bg-secondary px-2.5 py-1 rounded-full">{allTodayTasks.length} tasks</span>
         </div>
 
         {allTodayTasks.length === 0 ? (
@@ -147,19 +140,16 @@ export function ExecuteView({
                 <div
                   key={task.id}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-3 rounded-xl transition-colors group',
+                    'flex items-center gap-3 px-4 py-3 rounded-xl transition-all group',
                     'hover:bg-secondary/50 cursor-pointer',
-                    isCompleted && 'opacity-50'
+                    isCompleted && 'opacity-40'
                   )}
                 >
-                  <button
-                    onClick={() => toggleComplete(task)}
-                    className="shrink-0"
-                  >
+                  <button onClick={() => toggleComplete(task)} className="shrink-0">
                     {isCompleted ? (
                       <CheckCircle2 className="w-5 h-5 text-accent" />
                     ) : (
-                      <Circle className="w-5 h-5 text-muted-foreground/40 hover:text-accent transition-colors" />
+                      <Circle className="w-5 h-5 text-muted-foreground/30 hover:text-accent transition-colors" />
                     )}
                   </button>
 
@@ -176,10 +166,7 @@ export function ExecuteView({
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className={cn('flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full', priority.color, 'bg-secondary')}>
-                      <span className={cn('w-1.5 h-1.5 rounded-full', priority.dot)} />
-                      {priority.label}
-                    </span>
+                    <span className={cn('w-2 h-2 rounded-full', priority.dotClass)} />
                     <button
                       onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
                       className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all"
@@ -196,15 +183,15 @@ export function ExecuteView({
 
       {/* Playbook Slots Summary */}
       {activeTasks.length > 0 && (
-        <div className="mt-6 glass rounded-2xl p-5">
+        <div className="mt-6 surface-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-4">Playbook Slots</h2>
           <div className="grid grid-cols-2 gap-3">
             {activeTasks.map(({ slot, task }) => (
               <div
                 key={slot.slotNumber}
                 className={cn(
-                  'rounded-xl p-3 bg-secondary/50 border border-border/50 cursor-pointer hover:border-accent/30 transition-colors',
-                  slot.timerState === 'running' && 'border-accent/50 bg-accent/5'
+                  'rounded-xl p-3.5 surface-sunken cursor-pointer hover:shadow-sm transition-all',
+                  slot.timerState === 'running' && 'ring-1 ring-accent/30'
                 )}
                 onClick={() => onClickTask(task)}
               >
@@ -212,7 +199,7 @@ export function ExecuteView({
                   <span className="text-[10px] font-medium text-muted-foreground">Slot {slot.slotNumber}</span>
                   <span className={cn(
                     'text-xs font-mono',
-                    slot.timerState === 'running' ? 'text-accent' : 'text-muted-foreground'
+                    slot.timerState === 'running' ? 'text-accent font-medium' : 'text-muted-foreground'
                   )}>
                     {formatTime(slot.timeRemaining)}
                   </span>
