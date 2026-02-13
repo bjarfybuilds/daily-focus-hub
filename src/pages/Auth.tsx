@@ -1,11 +1,24 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { lovable } from '@/integrations/lovable/index';
+import { useAuth } from '@/hooks/useAuth';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (user) return <Navigate to="/" replace />;
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
