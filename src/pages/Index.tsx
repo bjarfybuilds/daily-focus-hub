@@ -9,17 +9,17 @@ import { StatusLogModal } from '@/components/StatusLogModal';
 import { TaskDetailModal } from '@/components/TaskDetailModal';
 import { TaskCard } from '@/components/TaskCard';
 import { BUCKETS, Task } from '@/types/tasks';
-import { Bot, Sparkles, LayoutGrid, Target, MessageCircle } from 'lucide-react';
+import { Bot, Sparkles, LayoutGrid, Target, MessageCircle, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const leftBuckets = BUCKETS.slice(0, 4);
 const rightBuckets = BUCKETS.slice(4, 8);
 
-const PERSONAL_USER_ID = '00000000-0000-0000-0000-000000000000';
-
 type ViewTab = 'plan' | 'execute';
 
 const Index = () => {
-  const store = useAppStore(PERSONAL_USER_ID);
+  const { user, signOut } = useAuth();
+  const store = useAppStore(user?.id);
   const [draggingTask, setDraggingTask] = useState<Task | null>(null);
   const [statusLogSlot, setStatusLogSlot] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -175,6 +175,13 @@ const Index = () => {
             >
               <MessageCircle className="w-4 h-4 text-accent" />
               <span>AI Chat</span>
+            </button>
+            <button
+              onClick={signOut}
+              className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </header>
