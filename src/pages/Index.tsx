@@ -134,7 +134,8 @@ const Index = () => {
         store.returnTaskToBucket(statusLogSlot);
       } else {
         // Keep in playbook — reset timer to idle
-        store.updateSlotTimer(statusLogSlot, { timerState: 'idle', timeRemaining: 3600 });
+        const slot = store.slots.find(s => s.slotNumber === statusLogSlot);
+        store.updateSlotTimer(statusLogSlot, { timerState: 'idle', timeRemaining: slot?.sprintDuration ?? 3600 });
       }
       setStatusLogSlot(null);
     }
@@ -249,7 +250,8 @@ const Index = () => {
             onClickTask={setSelectedTask}
             onDeleteTask={store.deleteTask}
             onUpdateTask={store.updateTask}
-            onSetSlotDuration={(slotNumber, seconds) => store.updateSlotTimer(slotNumber, { timeRemaining: seconds })}
+            onSetSlotDuration={(slotNumber, seconds) => store.updateSlotTimer(slotNumber, { timeRemaining: seconds, sprintDuration: seconds })}
+            onScrubTimer={(slotNumber, seconds) => store.updateSlotTimer(slotNumber, { timeRemaining: seconds })}
             immersiveMode={immersiveMode}
             onToggleImmersive={() => setImmersiveMode(prev => !prev)}
           />

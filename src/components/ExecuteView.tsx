@@ -16,6 +16,7 @@ interface ExecuteViewProps {
   onDeleteTask: (taskId: string) => void;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onSetSlotDuration: (slotNumber: number, seconds: number) => void;
+  onScrubTimer: (slotNumber: number, seconds: number) => void;
   immersiveMode?: boolean;
   onToggleImmersive?: () => void;
 }
@@ -101,6 +102,7 @@ export function ExecuteView({
   onDeleteTask,
   onUpdateTask,
   onSetSlotDuration,
+  onScrubTimer,
   immersiveMode = false,
   onToggleImmersive,
 }: ExecuteViewProps) {
@@ -159,9 +161,7 @@ export function ExecuteView({
   };
 
   const currentDuration = focusSlot?.timeRemaining ?? 3600;
-  const sprintTotal = focusSlot
-    ? DURATION_PRESETS.find(p => p.seconds >= currentDuration)?.seconds ?? 3600
-    : 3600;
+  const sprintTotal = focusSlot?.sprintDuration ?? 3600;
   const elapsed = sprintTotal - currentDuration;
   const progressPercent = sprintTotal > 0 ? Math.min(100, (elapsed / sprintTotal) * 100) : 0;
 
@@ -279,7 +279,7 @@ export function ExecuteView({
               onValueCommit={([val]) => {
                 const newElapsed = Math.round((val / 100) * sprintTotal);
                 const newRemaining = Math.max(0, sprintTotal - newElapsed);
-                onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+                onScrubTimer(focusSlot.slotNumber, newRemaining);
                 setScrubbing(false);
                 setScrubValue(null);
               }}
@@ -319,7 +319,7 @@ export function ExecuteView({
                 onClick={() => onSetSlotDuration(focusSlot.slotNumber, preset.seconds)}
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all',
-                  currentDuration === preset.seconds
+                  sprintTotal === preset.seconds
                     ? 'bg-accent/20 text-accent'
                     : 'text-muted-foreground/40 hover:text-muted-foreground hover:bg-secondary/50'
                 )}
@@ -445,7 +445,7 @@ export function ExecuteView({
                 onValueCommit={([val]) => {
                   const newElapsed = Math.round((val / 100) * sprintTotal);
                   const newRemaining = Math.max(0, sprintTotal - newElapsed);
-                  onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+                  onScrubTimer(focusSlot.slotNumber, newRemaining);
                   setScrubbing(false);
                   setScrubValue(null);
                 }}
@@ -483,7 +483,7 @@ export function ExecuteView({
                   onClick={() => onSetSlotDuration(focusSlot.slotNumber, preset.seconds)}
                   className={cn(
                     'px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider transition-all',
-                    currentDuration === preset.seconds
+                    sprintTotal === preset.seconds
                       ? 'bg-accent/15 text-accent'
                       : 'text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary'
                   )}

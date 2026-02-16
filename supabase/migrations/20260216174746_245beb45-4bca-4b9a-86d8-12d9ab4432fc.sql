@@ -1,0 +1,1 @@
+ALTER TABLE public.playbook_slots ADD COLUMN sprint_duration integer NOT NULL DEFAULT 3600;
