@@ -3,7 +3,7 @@ import { Task, BUCKETS, BUCKET_COLORS, PlaybookSlot } from '@/types/tasks';
 import { Play, Pause, CheckCircle2, Square, CheckSquare, Timer, SkipBack, SkipForward, Maximize2, Minimize2 } from 'lucide-react';
 import { DailyPlaybook } from './DailyPlaybook';
 import { cn } from '@/lib/utils';
-import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 
 interface ExecuteViewProps {
   slots: PlaybookSlot[];
@@ -263,9 +263,20 @@ export function ExecuteView({
             {formatTime(focusSlot.timeRemaining)}
           </span>
 
-          {/* Progress bar */}
+          {/* Scrubber timeline */}
           <div className="w-full max-w-sm sm:max-w-md space-y-1">
-            <Progress value={progressPercent} className="h-2 sm:h-2.5" />
+            <Slider
+              value={[progressPercent]}
+              min={0}
+              max={100}
+              step={0.5}
+              onValueChange={([val]) => {
+                const newElapsed = Math.round((val / 100) * sprintTotal);
+                const newRemaining = Math.max(0, sprintTotal - newElapsed);
+                onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+              }}
+              className="h-2 sm:h-2.5"
+            />
             <div className="flex justify-between text-[10px] sm:text-xs font-mono text-muted-foreground/70">
               <span>{formatTime(elapsed)}</span>
               <span>-{formatTime(currentDuration)}</span>
@@ -414,7 +425,18 @@ export function ExecuteView({
             </span>
 
             <div className="w-full max-w-xs sm:max-w-md space-y-1">
-              <Progress value={progressPercent} className="h-1.5 sm:h-2" />
+              <Slider
+                value={[progressPercent]}
+                min={0}
+                max={100}
+                step={0.5}
+                onValueChange={([val]) => {
+                  const newElapsed = Math.round((val / 100) * sprintTotal);
+                  const newRemaining = Math.max(0, sprintTotal - newElapsed);
+                  onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+                }}
+                className="h-1.5 sm:h-2"
+              />
               <div className="flex justify-between text-[9px] sm:text-[10px] font-mono text-muted-foreground">
                 <span>{formatTime(elapsed)}</span>
                 <span>-{formatTime(currentDuration)}</span>
