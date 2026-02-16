@@ -2,17 +2,14 @@ import { useState } from 'react';
 
 interface StatusLogModalProps {
   slotNumber: number;
-  onSubmit: (accomplished: string, nextStep: string) => void;
+  onSubmit: (accomplished: string, nextStep: string, action: 'keep' | 'return') => void;
 }
 
 export function StatusLogModal({ slotNumber, onSubmit }: StatusLogModalProps) {
   const [accomplished, setAccomplished] = useState('');
   const [nextStep, setNextStep] = useState('');
 
-  const handleSubmit = () => {
-    if (!accomplished.trim() || !nextStep.trim()) return;
-    onSubmit(accomplished.trim(), nextStep.trim());
-  };
+  const isValid = accomplished.trim() && nextStep.trim();
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/10 backdrop-blur-sm">
@@ -48,13 +45,22 @@ export function StatusLogModal({ slotNumber, onSubmit }: StatusLogModalProps) {
           </div>
         </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={!accomplished.trim() || !nextStep.trim()}
-          className="w-full py-3 rounded-2xl bg-accent text-accent-foreground text-sm font-semibold disabled:opacity-30 hover:bg-accent/90 transition-colors"
-        >
-          Log & Close Sprint
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => isValid && onSubmit(accomplished.trim(), nextStep.trim(), 'keep')}
+            disabled={!isValid}
+            className="flex-1 py-3 rounded-2xl bg-accent text-accent-foreground text-sm font-semibold disabled:opacity-30 hover:bg-accent/90 transition-colors"
+          >
+            Log & Keep in Playbook
+          </button>
+          <button
+            onClick={() => isValid && onSubmit(accomplished.trim(), nextStep.trim(), 'return')}
+            disabled={!isValid}
+            className="flex-1 py-3 rounded-2xl bg-secondary text-foreground text-sm font-semibold disabled:opacity-30 hover:bg-secondary/80 transition-colors border border-border"
+          >
+            Log & Return to Bucket
+          </button>
+        </div>
       </div>
     </div>
   );
