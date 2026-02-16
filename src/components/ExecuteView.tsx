@@ -110,6 +110,8 @@ export function ExecuteView({
 
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState('');
+  const [scrubbing, setScrubbing] = useState(false);
+  const [scrubValue, setScrubValue] = useState<number | null>(null);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -266,20 +268,26 @@ export function ExecuteView({
           {/* Scrubber timeline */}
           <div className="w-full max-w-sm sm:max-w-md space-y-1">
             <Slider
-              value={[progressPercent]}
+              value={[scrubbing && scrubValue !== null ? scrubValue : progressPercent]}
               min={0}
               max={100}
               step={0.5}
               onValueChange={([val]) => {
+                setScrubbing(true);
+                setScrubValue(val);
+              }}
+              onValueCommit={([val]) => {
                 const newElapsed = Math.round((val / 100) * sprintTotal);
                 const newRemaining = Math.max(0, sprintTotal - newElapsed);
                 onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+                setScrubbing(false);
+                setScrubValue(null);
               }}
               className="h-2 sm:h-2.5"
             />
             <div className="flex justify-between text-[10px] sm:text-xs font-mono text-muted-foreground/70">
-              <span>{formatTime(elapsed)}</span>
-              <span>-{formatTime(currentDuration)}</span>
+              <span>{formatTime(scrubbing && scrubValue !== null ? Math.round((scrubValue / 100) * sprintTotal) : elapsed)}</span>
+              <span>-{formatTime(scrubbing && scrubValue !== null ? Math.max(0, sprintTotal - Math.round((scrubValue / 100) * sprintTotal)) : currentDuration)}</span>
             </div>
           </div>
 
@@ -426,14 +434,20 @@ export function ExecuteView({
 
             <div className="w-full max-w-xs sm:max-w-md space-y-1">
               <Slider
-                value={[progressPercent]}
+                value={[scrubbing && scrubValue !== null ? scrubValue : progressPercent]}
                 min={0}
                 max={100}
                 step={0.5}
                 onValueChange={([val]) => {
+                  setScrubbing(true);
+                  setScrubValue(val);
+                }}
+                onValueCommit={([val]) => {
                   const newElapsed = Math.round((val / 100) * sprintTotal);
                   const newRemaining = Math.max(0, sprintTotal - newElapsed);
                   onSetSlotDuration(focusSlot.slotNumber, newRemaining);
+                  setScrubbing(false);
+                  setScrubValue(null);
                 }}
                 className="h-1.5 sm:h-2"
               />
