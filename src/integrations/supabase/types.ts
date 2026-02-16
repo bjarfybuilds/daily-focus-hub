@@ -19,6 +19,7 @@ export type Database = {
           id: string
           playbook_date: string
           slot_number: number
+          sprint_duration: number
           task_id: string | null
           time_remaining: number
           timer_state: string
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           playbook_date?: string
           slot_number: number
+          sprint_duration?: number
           task_id?: string | null
           time_remaining?: number
           timer_state?: string
@@ -37,6 +39,7 @@ export type Database = {
           id?: string
           playbook_date?: string
           slot_number?: number
+          sprint_duration?: number
           task_id?: string | null
           time_remaining?: number
           timer_state?: string

@@ -7,6 +7,7 @@ const initialSlots: PlaybookSlot[] = Array.from({ length: 8 }, (_, i) => ({
   task: null,
   timerState: 'idle',
   timeRemaining: 3600,
+  sprintDuration: 3600,
 }));
 
 export function useAppStore(userId: string | undefined) {
@@ -82,6 +83,7 @@ export function useAppStore(userId: string | undefined) {
               },
               timerState: dbSlot.timer_state as PlaybookSlot['timerState'],
               timeRemaining: dbSlot.time_remaining,
+              sprintDuration: (dbSlot as any).sprint_duration ?? 3600,
             };
           }
         }
@@ -133,7 +135,7 @@ export function useAppStore(userId: string | undefined) {
   const deleteTask = useCallback(async (taskId: string) => {
     await supabase.from('tasks').delete().eq('id', taskId);
     setTasks(prev => prev.filter(t => t.id !== taskId));
-    setSlots(prev => prev.map(s => s.task?.id === taskId ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600 } : s));
+    setSlots(prev => prev.map(s => s.task?.id === taskId ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600, sprintDuration: 3600 } : s));
   }, []);
 
   const moveTaskToSlot = useCallback(async (taskId: string, slotNumber: number) => {
@@ -150,12 +152,13 @@ export function useAppStore(userId: string | undefined) {
       task_id: taskId,
       timer_state: 'idle',
       time_remaining: 3600,
+      sprint_duration: 3600,
       playbook_date: today,
     }, { onConflict: 'user_id,slot_number,playbook_date' });
 
     setTasks(prev => prev.filter(t => t.id !== taskId));
     setSlots(prev => prev.map(s =>
-      s.slotNumber === slotNumber ? { ...s, task: { ...task, column: 'in-progress' }, timerState: 'idle', timeRemaining: 3600 } : s
+      s.slotNumber === slotNumber ? { ...s, task: { ...task, column: 'in-progress' }, timerState: 'idle', timeRemaining: 3600, sprintDuration: 3600 } : s
     ));
   }, [userId, tasks]);
 
@@ -172,7 +175,7 @@ export function useAppStore(userId: string | undefined) {
         .eq('user_id', userId).eq('slot_number', slotNumber).eq('playbook_date', today);
     }
 
-    setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600 } : s));
+    setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600, sprintDuration: 3600 } : s));
   }, [slots, userId]);
 
   const returnTaskToBucket = useCallback(async (slotNumber: number) => {
@@ -188,7 +191,7 @@ export function useAppStore(userId: string | undefined) {
         .eq('user_id', userId).eq('slot_number', slotNumber).eq('playbook_date', today);
     }
 
-    setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600 } : s));
+    setSlots(prev => prev.map(s => s.slotNumber === slotNumber ? { ...s, task: null, timerState: 'idle', timeRemaining: 3600, sprintDuration: 3600 } : s));
   }, [slots, userId]);
 
   const moveSlotToSlot = useCallback(async (fromSlotNumber: number, toSlotNumber: number) => {
@@ -209,6 +212,7 @@ export function useAppStore(userId: string | undefined) {
         task_id: toTask.id,
         timer_state: toSlot!.timerState,
         time_remaining: toSlot!.timeRemaining,
+        sprint_duration: toSlot!.sprintDuration,
         playbook_date: today,
       }, { onConflict: 'user_id,slot_number,playbook_date' });
     } else {
@@ -223,14 +227,15 @@ export function useAppStore(userId: string | undefined) {
       task_id: fromTask.id,
       timer_state: fromSlot.timerState,
       time_remaining: fromSlot.timeRemaining,
+      sprint_duration: fromSlot.sprintDuration,
       playbook_date: today,
     }, { onConflict: 'user_id,slot_number,playbook_date' });
 
     setSlots(prev => prev.map(s => {
       if (s.slotNumber === fromSlotNumber) {
         return toTask
-          ? { ...s, task: toTask, timerState: toSlot!.timerState, timeRemaining: toSlot!.timeRemaining }
-          : { ...s, task: null, timerState: 'idle', timeRemaining: 3600 };
+          ? { ...s, task: toTask, timerState: toSlot!.timerState, timeRemaining: toSlot!.timeRemaining, sprintDuration: toSlot!.sprintDuration }
+          : { ...s, task: null, timerState: 'idle', timeRemaining: 3600, sprintDuration: 3600 };
       }
       if (s.slotNumber === toSlotNumber) {
         return { ...s, task: fromTask, timerState: fromSlot.timerState, timeRemaining: fromSlot.timeRemaining };
@@ -268,14 +273,15 @@ export function useAppStore(userId: string | undefined) {
   }, []);
 
   const updateSlotTimer = useCallback(async (slotNumber: number, updates: Partial<PlaybookSlot>) => {
-    const shouldPersist = updates.timerState !== undefined || updates.timeRemaining !== undefined;
+    const shouldPersist = updates.timerState !== undefined || updates.timeRemaining !== undefined || updates.sprintDuration !== undefined;
     if (shouldPersist && userId) {
       const today = new Date().toISOString().split('T')[0];
       const dbUpdate: Record<string, any> = {};
       if (updates.timerState !== undefined) dbUpdate.timer_state = updates.timerState;
       if (updates.timeRemaining !== undefined) dbUpdate.time_remaining = updates.timeRemaining;
+      if (updates.sprintDuration !== undefined) dbUpdate.sprint_duration = updates.sprintDuration;
       // Don't persist every tick — only persist time_remaining if timerState changed or it's an explicit duration set
-      if (updates.timerState !== undefined || !('timerState' in updates)) {
+      if (updates.timerState !== undefined || updates.sprintDuration !== undefined || !('timerState' in updates)) {
         await supabase.from('playbook_slots').update(dbUpdate)
           .eq('user_id', userId).eq('slot_number', slotNumber).eq('playbook_date', today);
       }

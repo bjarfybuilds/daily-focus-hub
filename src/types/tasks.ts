@@ -26,6 +26,7 @@ export interface PlaybookSlot {
   task: Task | null;
   timerState: 'idle' | 'running' | 'paused' | 'logging';
   timeRemaining: number; // seconds
+  sprintDuration: number; // total sprint duration in seconds
 }
 
 export interface Bucket {
