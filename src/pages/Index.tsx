@@ -53,7 +53,7 @@ const Index = () => {
           }
         } else {
           const targetSlot = store.slots.find(s => s.slotNumber === slotNumber);
-          if (targetSlot && !targetSlot.task) {
+          if (!targetSlot?.task) {
             store.moveTaskToSlot(activeId, slotNumber);
           }
         }
