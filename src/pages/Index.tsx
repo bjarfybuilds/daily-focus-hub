@@ -77,6 +77,26 @@ const Index = () => {
   const slotsRef = useRef(store.slots);
   slotsRef.current = store.slots;
 
+  // Play alert sound
+  const playAlertSound = useCallback(() => {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const playBeep = (time: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.25);
+      osc.start(time);
+      osc.stop(time + 0.3);
+    };
+    for (let i = 0; i < 4; i++) {
+      playBeep(ctx.currentTime + i * 0.35);
+    }
+  }, []);
+
   useEffect(() => {
     const interval = setInterval(() => {
       slotsRef.current.forEach(slot => {
@@ -85,9 +105,11 @@ const Index = () => {
           if (newTime <= 300 && slot.timeRemaining > 300) {
             store.updateSlotTimer(slot.slotNumber, { timeRemaining: newTime, timerState: 'logging' });
             setStatusLogSlot(slot.slotNumber);
+            playAlertSound();
           } else if (newTime <= 0) {
             store.updateSlotTimer(slot.slotNumber, { timeRemaining: 0, timerState: 'logging' });
             setStatusLogSlot(slot.slotNumber);
+            playAlertSound();
           } else {
             store.updateSlotTimer(slot.slotNumber, { timeRemaining: newTime });
           }
@@ -95,15 +117,25 @@ const Index = () => {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [store]);
+  }, [store, playAlertSound]);
 
   const pauseTimer = useCallback((slotNumber: number) => {
     store.updateSlotTimer(slotNumber, { timerState: 'paused' });
   }, [store]);
 
-  const handleStatusLogSubmit = (accomplished: string, nextStep: string) => {
+  const handleStatusLogSubmit = (accomplished: string, nextStep: string, action: 'keep' | 'return') => {
     if (statusLogSlot !== null) {
-      store.removeTaskFromSlot(statusLogSlot);
+      const slot = store.slots.find(s => s.slotNumber === statusLogSlot);
+      // Log the sprint entry to the task's logbook
+      if (slot?.task) {
+        store.addLogEntry(slot.task.id, `🏁 Sprint Log:\n• Accomplished: ${accomplished}\n• Next step: ${nextStep}`);
+      }
+      if (action === 'return') {
+        store.returnTaskToBucket(statusLogSlot);
+      } else {
+        // Keep in playbook — reset timer to idle
+        store.updateSlotTimer(statusLogSlot, { timerState: 'idle', timeRemaining: 3600 });
+      }
       setStatusLogSlot(null);
     }
   };
