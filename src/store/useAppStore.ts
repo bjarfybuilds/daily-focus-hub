@@ -196,27 +196,45 @@ export function useAppStore(userId: string | undefined) {
     const fromSlot = slots.find(s => s.slotNumber === fromSlotNumber);
     if (!fromSlot?.task) return;
     const toSlot = slots.find(s => s.slotNumber === toSlotNumber);
-    if (toSlot?.task) return; // target must be empty
 
-    const task = fromSlot.task;
+    const fromTask = fromSlot.task;
+    const toTask = toSlot?.task || null;
     const today = new Date().toISOString().split('T')[0];
 
-    // Delete old slot, upsert new slot in DB
-    await supabase.from('playbook_slots').delete()
-      .eq('user_id', userId).eq('slot_number', fromSlotNumber).eq('playbook_date', today);
+    // Update from-slot: swap in toTask or clear it
+    if (toTask) {
+      await supabase.from('playbook_slots').upsert({
+        user_id: userId,
+        slot_number: fromSlotNumber,
+        task_id: toTask.id,
+        timer_state: toSlot!.timerState,
+        time_remaining: toSlot!.timeRemaining,
+        playbook_date: today,
+      }, { onConflict: 'user_id,slot_number,playbook_date' });
+    } else {
+      await supabase.from('playbook_slots').delete()
+        .eq('user_id', userId).eq('slot_number', fromSlotNumber).eq('playbook_date', today);
+    }
 
+    // Update to-slot with fromTask
     await supabase.from('playbook_slots').upsert({
       user_id: userId,
       slot_number: toSlotNumber,
-      task_id: task.id,
-      timer_state: 'idle',
-      time_remaining: 3600,
+      task_id: fromTask.id,
+      timer_state: fromSlot.timerState,
+      time_remaining: fromSlot.timeRemaining,
       playbook_date: today,
     }, { onConflict: 'user_id,slot_number,playbook_date' });
 
     setSlots(prev => prev.map(s => {
-      if (s.slotNumber === fromSlotNumber) return { ...s, task: null, timerState: 'idle', timeRemaining: 3600 };
-      if (s.slotNumber === toSlotNumber) return { ...s, task, timerState: 'idle', timeRemaining: 3600 };
+      if (s.slotNumber === fromSlotNumber) {
+        return toTask
+          ? { ...s, task: toTask, timerState: toSlot!.timerState, timeRemaining: toSlot!.timeRemaining }
+          : { ...s, task: null, timerState: 'idle', timeRemaining: 3600 };
+      }
+      if (s.slotNumber === toSlotNumber) {
+        return { ...s, task: fromTask, timerState: fromSlot.timerState, timeRemaining: fromSlot.timeRemaining };
+      }
       return s;
     }));
   }, [slots, userId]);
