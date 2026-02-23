@@ -87,6 +87,8 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry, on
   const [editingSubtaskText, setEditingSubtaskText] = useState('');
   const [newLink, setNewLink] = useState('');
   const [showAddLink, setShowAddLink] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
   const bucketColor = BUCKET_COLORS[task.bucketId];
   const bucket = BUCKETS.find(b => b.id === task.bucketId);
 
@@ -183,7 +185,41 @@ export function TaskDetailModal({ task, onClose, onUpdateTask, onAddLogEntry, on
 
         {/* Title */}
         <div className="px-5 pb-4">
-          <h2 className="text-xl font-bold text-foreground">{task.title}</h2>
+          {isEditingTitle ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (editTitle.trim()) {
+                    onUpdateTask(task.id, { title: editTitle.trim() });
+                  }
+                  setIsEditingTitle(false);
+                } else if (e.key === 'Escape') {
+                  setEditTitle(task.title);
+                  setIsEditingTitle(false);
+                }
+              }}
+              onBlur={() => {
+                if (editTitle.trim() && editTitle.trim() !== task.title) {
+                  onUpdateTask(task.id, { title: editTitle.trim() });
+                }
+                setIsEditingTitle(false);
+              }}
+              className="text-xl font-bold text-foreground bg-transparent outline-none border-b-2 border-accent/50 w-full"
+              autoFocus
+            />
+          ) : (
+            <h2
+              className="text-xl font-bold text-foreground cursor-pointer hover:text-accent transition-colors"
+              onDoubleClick={() => setIsEditingTitle(true)}
+              title="Double-click to edit"
+            >
+              {task.title}
+            </h2>
+          )}
         </div>
 
         {/* Body */}
